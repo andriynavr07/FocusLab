@@ -15,7 +15,6 @@ ViewModel (MVVM)
 Services (TaskService, ResourceService, FocusService, AnalyticsService)
    │
    ├── EF Core (IDbContextFactory) ──► CRUD: задачі, проєкти, теги, ресурси, сесії
-   └── ADO.NET (SqliteConnection) ──► читання для аналітики (GROUP BY, SUM)
                      │
                      ▼
               SQLite (.db файл, локально)
@@ -37,7 +36,7 @@ Services (TaskService, ResourceService, FocusService, AnalyticsService)
 | `Tags` | `Id`, `Name`, `Color` | |
 | `TaskTags` | `TaskId`, `TagId` | Зв'язок many-to-many |
 | `TaskResources` | `Id`, `TaskId`, `Type` (File/Folder/Url), `Path`, `DisplayName` | Кількість необмежена |
-| `FocusSessions` | `Id`, `TaskId`, `StartDateTime`, `DurationMinutes`, `IsCompleted` | Джерело для аналітики |
+
 
 **Enum-и:**
 - `Priority`: Low, Medium, High, Critical
@@ -62,7 +61,7 @@ Services (TaskService, ResourceService, FocusService, AnalyticsService)
 | Відкриття ресурсу | `TaskResources.Path` | — (файлова система) | `File.Exists`/`Directory.Exists` + `Process.Start` | Sync-перевірка |
 | Старт/пауза/скидання таймера | — | Нічого в БД до завершення | Стан у пам'яті | — |
 | Завершення сесії | — | `FocusSessions` (`IsCompleted = true`) | EF Core | Async |
-| Відкриття «Аналітики» | Агрегати за період | — | ADO.NET | Async |
+
 
 ## 4. Детальні потоки
 
@@ -96,10 +95,6 @@ Services (TaskService, ResourceService, FocusService, AnalyticsService)
 4. `FocusService.SaveSessionAsync(taskId, startTime, 25, true)` → запис у `FocusSessions`.
 5. Лічильник завершених сесій у поточному циклі: `< 4` → перерва 5 хв, `= 4` → довга перерва 15–20 хв і скидання лічильника.
 
-### 4.5. Аналітика (ADO.NET)
-1. Користувач обирає період → ViewModel обчислює межі `from`/`to` (локальний час → UTC).
-2. `AnalyticsService` відкриває `SqliteConnection`, виконує запити через `ExecuteReaderAsync` із параметрами.
-3. Результат мапиться в прості DTO, ViewModel оновлює показники та діаграму.
 
 **Запити (приклад):**
 
@@ -145,13 +140,11 @@ WHERE Status = 3
 
 ## 6. Розташування даних
 
-- Файл БД: `%AppData%\FocusLab\focuslab.db` (рекомендовано, немає проблем з правами запису).
+- Файл БД: `%AppData%\FocusLab\focuslab.db` .
 - Рядок підключення береться з одного місця й використовується і EF Core, і ADO.NET.
 - Резервне копіювання: копіювання одного файлу `.db` (у backlog: кнопка «Експорт/резервна копія»).
 
 ## 7. Що перевірити після реалізації
 
 - Дані збереглися після перезапуску (задачі, статуси, ресурси, сесії).
-- Аналітика збігається з ручним підрахунком на тестових даних.
-- Аналітичний запит на 10 000 сесій виконується без помітних затримок і без зависання UI.
 - Застосунок стартує без мережі, БД створюється при першому запуску.
