@@ -43,4 +43,5 @@
 - **Операційна система:** Windows 10 / Windows 11
 - **Середовище виконання:** .NET 8.0 Runtime або вище
 
+## Користувацький інтерфейс
 - Посилання на дизайн користувацького інтерфейсу: https://www.figma.com/design/hmwl2ux0AT1Li6oOAvMfsx/Untitled--Copy-?node-id=0-1&t=zYImCc4LJ4GC106q-1
