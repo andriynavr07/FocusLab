@@ -101,34 +101,6 @@ Services (TaskService, ResourceService, FocusService, AnalyticsService)
 2. `AnalyticsService` відкриває `SqliteConnection`, виконує запити через `ExecuteReaderAsync` із параметрами.
 3. Результат мапиться в прості DTO, ViewModel оновлює показники та діаграму.
 
-**Запити (приклад):**
-
-```sql
--- Загальний час і кількість завершених сесій
-SELECT COALESCE(SUM(DurationMinutes), 0) AS TotalMinutes,
-       COUNT(*)                          AS CompletedSessions
-FROM FocusSessions
-WHERE IsCompleted = 1
-  AND StartDateTime >= @from AND StartDateTime < @to;
-
--- Розподіл часу за проєктами
-SELECT COALESCE(p.Name, 'Без проєкту') AS ProjectName,
-       SUM(fs.DurationMinutes)         AS Minutes
-FROM FocusSessions fs
-JOIN Tasks t          ON t.Id = fs.TaskId
-LEFT JOIN Projects p  ON p.Id = t.ProjectId
-WHERE fs.IsCompleted = 1
-  AND fs.StartDateTime >= @from AND fs.StartDateTime < @to
-GROUP BY p.Id, p.Name
-ORDER BY Minutes DESC;
-
--- Кількість закритих задач за період
-SELECT COUNT(*)
-FROM Tasks
-WHERE Status = 3
-  AND CompletedAt >= @from AND CompletedAt < @to;
-```
-
 Для розподілу за тегами — додатковий `JOIN TaskTags`/`Tags`; врахувати, що задача з кількома тегами дублюється в різних групах.
 
 ## 5. Правила цілісності та помилок
