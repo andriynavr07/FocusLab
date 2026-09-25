@@ -96,13 +96,6 @@ Services (TaskService, ResourceService, FocusService, AnalyticsService)
 4. `FocusService.SaveSessionAsync(taskId, startTime, 25, true)` → запис у `FocusSessions`.
 5. Лічильник завершених сесій у поточному циклі: `< 4` → перерва 5 хв, `= 4` → довга перерва 15–20 хв і скидання лічильника.
 
-### 4.5. Аналітика (ADO.NET)
-1. Користувач обирає період → ViewModel обчислює межі `from`/`to` (локальний час → UTC).
-2. `AnalyticsService` відкриває `SqliteConnection`, виконує запити через `ExecuteReaderAsync` із параметрами.
-3. Результат мапиться в прості DTO, ViewModel оновлює показники та діаграму.
-
-Для розподілу за тегами — додатковий `JOIN TaskTags`/`Tags`; врахувати, що задача з кількома тегами дублюється в різних групах.
-
 ## 5. Правила цілісності та помилок
 
 | Ситуація | Поведінка |
