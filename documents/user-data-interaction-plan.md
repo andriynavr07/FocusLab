@@ -62,7 +62,6 @@ Services (TaskService, ResourceService, FocusService, AnalyticsService)
 | Відкриття ресурсу | `TaskResources.Path` | — (файлова система) | `File.Exists`/`Directory.Exists` + `Process.Start` | Sync-перевірка |
 | Старт/пауза/скидання таймера | — | Нічого в БД до завершення | Стан у пам'яті | — |
 | Завершення сесії | — | `FocusSessions` (`IsCompleted = true`) | EF Core | Async |
-| Відкриття «Аналітики» | Агрегати за період | — | ADO.NET | Async |
 
 ## 4. Детальні потоки
 
@@ -106,7 +105,7 @@ Services (TaskService, ResourceService, FocusService, AnalyticsService)
 | Помилка запису в БД | Повідомлення користувачу, стан UI узгоджується з БД |
 | Відсутній ресурс на диску | Повідомлення, запис у БД не змінюється |
 | Закриття застосунку під час сесії | Попередження; незавершена сесія не записується |
-| Одночасний доступ EF Core + ADO.NET | Увімкнути режим WAL, короткі з'єднання, `Cache=Shared` не потрібен |
+
 
 ## 6. Розташування даних
 
