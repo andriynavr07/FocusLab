@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/App/FocusLab.App.csproj" />
+    <Project Path="src/Application/FocusLab.Application.csproj" />
+    <Project Path="src/Domain/FocusLab.Domain.csproj" />
+    <Project Path="src/Infrastructure/FocusLab.Infrastructure.csproj" />
+  </Folder>
+</Solution>
