@@ -5,4 +5,6 @@
     <Project Path="src/Domain/FocusLab.Domain.csproj" />
     <Project Path="src/Infrastructure/FocusLab.Infrastructure.csproj" />
   </Folder>
+  <Project Path="../Frontend/Frontend.csproj" />
+  <Project Path="tests/FocusLab.Application.Tests/FocusLab.Application.Tests.csproj" />
 </Solution>
