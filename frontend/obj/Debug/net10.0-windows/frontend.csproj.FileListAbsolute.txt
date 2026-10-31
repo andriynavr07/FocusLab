@@ -28,3 +28,13 @@ C:\Users\Максим\Desktop\FocusLab\frontend\obj\Debug\net10.0-windows\refint
 C:\Users\Максим\Desktop\FocusLab\frontend\obj\Debug\net10.0-windows\frontend.pdb
 C:\Users\Максим\Desktop\FocusLab\frontend\obj\Debug\net10.0-windows\frontend.genruntimeconfig.cache
 C:\Users\Максим\Desktop\FocusLab\frontend\obj\Debug\net10.0-windows\ref\frontend.dll
+C:\Users\Максим\Desktop\FocusLab\frontend\obj\Debug\net10.0-windows\frontend.csproj.AssemblyReference.cache
+C:\Users\Максим\Desktop\FocusLab\frontend\bin\Debug\net10.0-windows\SharpVectors.Converters.Wpf.dll
+C:\Users\Максим\Desktop\FocusLab\frontend\bin\Debug\net10.0-windows\SharpVectors.Core.dll
+C:\Users\Максим\Desktop\FocusLab\frontend\bin\Debug\net10.0-windows\SharpVectors.Css.dll
+C:\Users\Максим\Desktop\FocusLab\frontend\bin\Debug\net10.0-windows\SharpVectors.Dom.dll
+C:\Users\Максим\Desktop\FocusLab\frontend\bin\Debug\net10.0-windows\SharpVectors.Model.dll
+C:\Users\Максим\Desktop\FocusLab\frontend\bin\Debug\net10.0-windows\SharpVectors.Rendering.Wpf.dll
+C:\Users\Максим\Desktop\FocusLab\frontend\bin\Debug\net10.0-windows\SharpVectors.Runtime.Wpf.dll
+C:\Users\Максим\Desktop\FocusLab\frontend\obj\Debug\net10.0-windows\frontend.sourcelink.json
+C:\Users\Максим\Desktop\FocusLab\frontend\obj\Debug\net10.0-windows\frontend.csproj.Up2Date
