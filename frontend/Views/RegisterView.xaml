@@ -1,0 +1,509 @@
+<UserControl x:Class="frontend.Views.RegisterView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:svgc="http://sharpvectors.codeplex.com/svgc"
+             xmlns:vm="clr-namespace:frontend.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="900"
+             d:DesignWidth="1440"
+             FontFamily="{StaticResource MainFontFamily}"
+             FontSize="{StaticResource BodyFontSize}"
+             Background="{DynamicResource DarkBackgroundBrush}"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True">
+
+    <UserControl.DataContext>
+        <vm:RegisterViewModel/>
+    </UserControl.DataContext>
+
+    <UserControl.Resources>
+
+        <!-- Локальне оформлення тексту для темного екрана -->
+        <Style TargetType="TextBlock"
+               BasedOn="{StaticResource BodyTextStyle}">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource WhiteBrush}"/>
+        </Style>
+
+        <Style x:Key="RegisterFieldLabelStyle"
+               TargetType="TextBlock">
+            <Setter Property="FontFamily"
+                    Value="{StaticResource MainFontFamily}"/>
+            <Setter Property="FontSize"
+                    Value="{StaticResource ControlFontSize}"/>
+            <Setter Property="FontWeight"
+                    Value="{StaticResource MediumFontWeight}"/>
+            <Setter Property="Foreground"
+                    Value="{DynamicResource WhiteBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <!-- Виправлений шаблон TextBox -->
+        <Style x:Key="RegisterInputStyle" TargetType="TextBox">
+            <Setter Property="Height" Value="52"/>
+            <Setter Property="FontFamily"
+                    Value="{StaticResource MainFontFamily}"/>
+            <Setter Property="FontSize"
+                    Value="{StaticResource BodyFontSize}"/>
+            <Setter Property="Foreground"
+                    Value="{DynamicResource WhiteBrush}"/>
+            <Setter Property="Background"
+                    Value="{DynamicResource DarkInputBackgroundBrush}"/>
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource DarkBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"
+                    Value="{StaticResource LoginInputPadding}"/>
+            <Setter Property="CaretBrush"
+                    Value="{DynamicResource WhiteBrush}"/>
+            <Setter Property="SelectionBrush"
+                    Value="{DynamicResource PrimaryBrush}"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="InputBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{StaticResource StandardCornerRadius}">
+
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              VerticalAlignment="Center"/>
+
+                                <TextBlock x:Name="Placeholder"
+                                           Text="{TemplateBinding Tag}"
+                                           FontFamily="{TemplateBinding FontFamily}"
+                                           FontSize="{TemplateBinding FontSize}"
+                                           Foreground="{DynamicResource DarkSecondaryTextBrush}"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False"
+                                           Visibility="Collapsed"/>
+                            </Grid>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Placeholder"
+                                        Property="Visibility"
+                                        Value="Visible"/>
+                            </Trigger>
+
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="InputBorder"
+                                        Property="BorderBrush"
+                                        Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsKeyboardFocusWithin"
+                                     Value="True">
+                                <Setter TargetName="InputBorder"
+                                        Property="BorderBrush"
+                                        Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="InputBorder"
+                                        Property="Opacity"
+                                        Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Окремий шаблон для PasswordBox -->
+        <Style x:Key="RegisterPasswordStyle" TargetType="PasswordBox">
+            <Setter Property="Height" Value="52"/>
+            <Setter Property="FontFamily"
+                    Value="{StaticResource MainFontFamily}"/>
+            <Setter Property="FontSize"
+                    Value="{StaticResource BodyFontSize}"/>
+            <Setter Property="Foreground"
+                    Value="{DynamicResource WhiteBrush}"/>
+            <Setter Property="Background"
+                    Value="{DynamicResource DarkInputBackgroundBrush}"/>
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource DarkBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"
+                    Value="{StaticResource LoginInputPadding}"/>
+            <Setter Property="CaretBrush"
+                    Value="{DynamicResource WhiteBrush}"/>
+            <Setter Property="SelectionBrush"
+                    Value="{DynamicResource PrimaryBrush}"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border x:Name="PasswordBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{StaticResource StandardCornerRadius}">
+
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="PasswordBorder"
+                                        Property="BorderBrush"
+                                        Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsKeyboardFocusWithin"
+                                     Value="True">
+                                <Setter TargetName="PasswordBorder"
+                                        Property="BorderBrush"
+                                        Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="PasswordBorder"
+                                        Property="Opacity"
+                                        Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Базовий шаблон кнопки без захардкоджених кольорів -->
+        <Style x:Key="RegisterButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="52"/>
+            <Setter Property="FontFamily"
+                    Value="{StaticResource MainFontFamily}"/>
+            <Setter Property="FontSize"
+                    Value="{StaticResource BodyFontSize}"/>
+            <Setter Property="FontWeight"
+                    Value="{StaticResource SemiBoldFontWeight}"/>
+            <Setter Property="Foreground"
+                    Value="{DynamicResource WhiteBrush}"/>
+            <Setter Property="Background"
+                    Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource TransparentBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"
+                    Value="{StaticResource ControlPadding}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}"
+                                CornerRadius="{StaticResource StandardCornerRadius}">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Opacity"
+                                        Value="0.9"/>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Opacity"
+                                        Value="0.8"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Opacity"
+                                        Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="RegisterToggleStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource RegisterButtonStyle}">
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="FontSize"
+                    Value="{StaticResource SmallFontSize}"/>
+            <Setter Property="Padding"
+                    Value="{StaticResource StandardPadding}"/>
+            <Setter Property="Background"
+                    Value="{DynamicResource DarkToggleBackgroundBrush}"/>
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource DarkToggleBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="RegisterLinkStyle" TargetType="Button">
+            <Setter Property="FontFamily"
+                    Value="{StaticResource MainFontFamily}"/>
+            <Setter Property="FontSize"
+                    Value="{StaticResource BodyFontSize}"/>
+            <Setter Property="FontWeight"
+                    Value="{StaticResource SemiBoldFontWeight}"/>
+            <Setter Property="Foreground"
+                    Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{DynamicResource TransparentBrush}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <!-- Масштабування зі збереженням пропорцій макета -->
+    <Viewbox Stretch="Uniform">
+        <Grid Width="1440"
+              Height="900"
+              Background="{DynamicResource DarkBackgroundBrush}">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="560"/>
+                <ColumnDefinition Width="880"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ==================== ЛІВА ПАНЕЛЬ ==================== -->
+
+            <Border Grid.Column="0"
+                    Background="{DynamicResource DarkSurfaceBrush}"
+                    BorderBrush="{DynamicResource DarkBorderBrush}"
+                    BorderThickness="0,0,1,0">
+
+                <Grid Margin="{StaticResource BrandPanelPadding}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="36"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="30"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Логотип та перемикачі -->
+                    <Grid Grid.Row="0">
+
+                        <StackPanel Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+
+                            <Border Width="36"
+                                    Height="36"
+                                    Background="{DynamicResource PrimaryBrush}"
+                                    CornerRadius="{StaticResource CornerRadius12}">
+
+                                <Path Width="18"
+                                      Height="18"
+                                      Stretch="Uniform"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Stroke="{DynamicResource WhiteBrush}"
+                                      StrokeThickness="1.7"
+                                      StrokeLineJoin="Round"
+                                      Data="M 11,1 L 3,10 L 9,10 L 7,17 L 15,7 L 9,7 Z"/>
+                            </Border>
+
+                            <TextBlock Text="FocusLab"
+                                       Margin="12,0,0,0"
+                                       Style="{StaticResource PageTitleTextStyle}"
+                                       Foreground="{DynamicResource WhiteBrush}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center">
+
+                            <Button x:Name="ThemeButton"
+                                    Width="49"
+                                    Content="Light"
+                                    ToolTip="Світла тема"
+                                    Style="{StaticResource RegisterToggleStyle}"/>
+
+                            <Button x:Name="LanguageButton"
+                                    Width="37"
+                                    Margin="26,0,0,0"
+                                    Content="EN"
+                                    ToolTip="English"
+                                    Style="{StaticResource RegisterToggleStyle}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Таймер і слоган -->
+                    <StackPanel Grid.Row="1"
+                                VerticalAlignment="Center">
+
+                        <Border Height="220"
+                                Background="{DynamicResource DarkIllustrationBackgroundBrush}"
+                                BorderBrush="{DynamicResource DarkBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource CornerRadius16}">
+
+                            <Grid>
+                                <Ellipse Width="152"
+                                         Height="152"
+                                         Stroke="{DynamicResource PrimaryBrush}"
+                                         StrokeThickness="7"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"/>
+
+                                <StackPanel VerticalAlignment="Center"
+                                            HorizontalAlignment="Center">
+
+                                    <TextBlock Text="25:00"
+                                               Style="{StaticResource TimerTextStyle}"
+                                               Foreground="{DynamicResource WhiteBrush}"/>
+
+                                    <TextBlock Text="ФОКУСУВАННЯ"
+                                               Margin="0,4,0,0"
+                                               Style="{StaticResource CaptionSemiBoldTextStyle}"
+                                               Foreground="{DynamicResource PrimaryBrush}"
+                                               TextAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Text="Сплануй свій день"
+                                   Margin="0,24,0,0"
+                                   Style="{StaticResource HeroTextStyle}"
+                                   Foreground="{DynamicResource WhiteBrush}"
+                                   TextAlignment="Center"/>
+
+                        <TextBlock Width="307"
+                                   Margin="0,12,0,0"
+                                   Text="Працюй, розвивайся, контролюй, але не забувай про відпочинок"
+                                   Style="{StaticResource BrandDescriptionTextStyle}"
+                                   Foreground="{DynamicResource DarkSecondaryTextBrush}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="2"
+                               Width="277"
+                               HorizontalAlignment="Left"
+                               Text="© 2026 FocusLab. Фокусуйся, одна сесія за раз."
+                               Style="{StaticResource CaptionTextStyle}"
+                               Foreground="{DynamicResource SlateTextBrush}"
+                               TextWrapping="Wrap"/>
+                </Grid>
+            </Border>
+
+            <!-- ==================== ФОРМА РЕЄСТРАЦІЇ ==================== -->
+
+            <Grid Grid.Column="1"
+                  Width="440"
+                  MinHeight="614"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+
+                <Border Background="{DynamicResource DarkSurfaceBrush}"
+                        BorderBrush="{DynamicResource DarkBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource CornerRadius16}"/>
+
+                <StackPanel Margin="{StaticResource Padding32}">
+
+                    <TextBlock Text="СТВОРИТИ АКАУНТ"
+                               Style="{StaticResource HeroTextStyle}"
+                               Foreground="{DynamicResource WhiteBrush}"/>
+
+                    <TextBlock Margin="0,8,0,24"
+                               Text="заповніть форму для початку фокусування на роботі"
+                               Style="{StaticResource BodyParagraphTextStyle}"
+                               Foreground="{DynamicResource DarkSecondaryTextBrush}"/>
+
+                    <!-- Ім'я -->
+                    <TextBlock Text="Імʼя"
+                               Style="{StaticResource RegisterFieldLabelStyle}"/>
+
+                    <TextBox x:Name="NameInput"
+                             Text="{Binding Name,
+                                            Mode=TwoWay,
+                                            UpdateSourceTrigger=PropertyChanged}"
+                             Tag="Ваше імʼя"
+                             Margin="0,0,0,16"
+                             AutomationProperties.Name="Імʼя"
+                             Style="{StaticResource RegisterInputStyle}"/>
+
+                    <!-- Електронна пошта -->
+                    <TextBlock Text="Ел. пошта"
+                               Style="{StaticResource RegisterFieldLabelStyle}"/>
+
+                    <TextBox x:Name="EmailInput"
+                             Text="{Binding Email,
+                                            Mode=TwoWay,
+                                            UpdateSourceTrigger=PropertyChanged}"
+                             Tag="you@example.com"
+                             Margin="0,0,0,16"
+                             AutomationProperties.Name="Електронна пошта"
+                             Style="{StaticResource RegisterInputStyle}"/>
+
+                    <!-- Пароль -->
+                    <TextBlock Text="Пароль"
+                               Style="{StaticResource RegisterFieldLabelStyle}"/>
+
+                    <PasswordBox x:Name="PasswordInput"
+                                 Margin="0,0,0,16"
+                                 ToolTip="Введіть пароль"
+                                 AutomationProperties.Name="Пароль"
+                                 Style="{StaticResource RegisterPasswordStyle}"/>
+
+                    <!-- Підтвердження пароля -->
+                    <TextBlock Text="Підтвердження пароля"
+                               Style="{StaticResource RegisterFieldLabelStyle}"/>
+
+                    <PasswordBox x:Name="ConfirmPasswordInput"
+                                 Margin="0,0,0,16"
+                                 ToolTip="Повторіть пароль"
+                                 AutomationProperties.Name="Підтвердження пароля"
+                                 Style="{StaticResource RegisterPasswordStyle}"/>
+
+                    <!-- Збережено твою команду -->
+                    <Button Content="Зареєструватися"
+                            Command="{Binding RegisterCommand}"
+                            Style="{StaticResource RegisterButtonStyle}"/>
+
+                    <StackPanel Orientation="Horizontal"
+                                Margin="0,24,0,0"
+                                HorizontalAlignment="Center">
+
+                        <TextBlock Text="Вже є акаунт?"
+                                   Foreground="{DynamicResource DarkSecondaryTextBrush}"
+                                   VerticalAlignment="Center"/>
+
+                        <Button x:Name="LoginButton"
+                                Content="Увійти"
+                                Margin="4,0,0,0"
+                                Style="{StaticResource RegisterLinkStyle}"/>
+                    </StackPanel>
+
+                </StackPanel>
+            </Grid>
+
+        </Grid>
+    </Viewbox>
+</UserControl>
