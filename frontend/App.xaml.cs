@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Windows;
-
+using FocusLab.Infrastructure.SystemServices;
 namespace frontend;
 
 public partial class App : System.Windows.Application
@@ -16,6 +16,7 @@ public partial class App : System.Windows.Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        AppPaths.EnsureCreated();
         try
         {
             _host = Host.CreateDefaultBuilder()
