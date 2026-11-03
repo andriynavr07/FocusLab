@@ -28,6 +28,12 @@ namespace FocusLab.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("email");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -42,9 +48,9 @@ namespace FocusLab.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Username")
+                    b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("ux_accounts_username");
+                        .HasDatabaseName("ux_accounts_email");
 
                     b.ToTable("accounts", (string)null);
 
@@ -53,6 +59,7 @@ namespace FocusLab.Infrastructure.Persistence.Migrations
                         {
                             Id = 1,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "",
                             PasswordHash = "",
                             Username = "local"
                         });

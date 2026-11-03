@@ -2,11 +2,13 @@
 using FocusLab.Application.Services;
 using FocusLab.Infrastructure;
 using FocusLab.Infrastructure.Persistence;
+using FocusLab.Infrastructure.SystemServices;
+using frontend.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Windows;
-using FocusLab.Infrastructure.SystemServices;
+
 namespace frontend;
 
 public partial class App : System.Windows.Application
@@ -24,6 +26,12 @@ public partial class App : System.Windows.Application
                 {
                     s.AddInfrastructure();
                     s.AddSingleton<ITaskService, TaskService>();
+                    s.AddSingleton<IAuthService, AuthService>();
+
+                    s.AddSingleton<MainViewModel>();
+                    s.AddTransient<RegisterViewModel>();
+                    s.AddTransient<HomeViewModel>();
+
                     s.AddSingleton<MainWindow>();
                 })
                 .Build();

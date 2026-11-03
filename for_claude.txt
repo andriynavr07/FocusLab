@@ -1,0 +1,340 @@
+﻿=== Backend\src\Infrastructure\Persistence\AppDbContext.cs
+using FocusLab.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+namespace FocusLab.Infrastructure.Persistence;
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<TaskItem> Tasks => Set<TaskItem>();
+    public DbSet<Tag> Tags => Set<Tag>();
+    public DbSet<TaskTag> TaskTags => Set<TaskTag>();
+    public DbSet<TaskResource> TaskResources => Set<TaskResource>();
+    public DbSet<FocusSession> FocusSessions => Set<FocusSession>();
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+    }
+}
+=== Backend\src\Infrastructure\DependencyInjection.cs
+using FocusLab.Application.Abstractions;
+using FocusLab.Infrastructure.Persistence;
+using FocusLab.Infrastructure.SystemServices;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+namespace FocusLab.Infrastructure;
+public static class DependencyInjection
+{
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    {
+        services.AddDbContextFactory<AppDbContext>(options => options.UseSqlite(AppPaths.ConnectionString));
+        services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<ITaskRepository, TaskRepository>();
+        return services;
+    }
+}
+=== Backend\src\Application\Abstractions\ITaskRepository.cs
+using FocusLab.Domain.Entities;
+namespace FocusLab.Application.Abstractions;
+public interface ITaskRepository
+{
+    Task<IReadOnlyList<TaskItem>> GetAllAsync(CancellationToken ct = default);
+    Task<TaskItem?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task AddAsync(TaskItem task, CancellationToken ct = default);
+    Task UpdateAsync(TaskItem task, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
+}
+=== Backend\src\Application\Abstractions\ITaskService.cs
+using FocusLab.Application.Dto;
+namespace FocusLab.Application.Abstractions;
+public interface ITaskService
+{
+    Task<IReadOnlyList<TaskDto>> GetAllAsync(CancellationToken ct = default);
+    Task<TaskDto> CreateAsync(TaskDto task, CancellationToken ct = default);
+    Task<TaskDto> UpdateAsync(TaskDto task, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
+}
+=== Backend\src\Infrastructure\FocusLab.Infrastructure.csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Application\FocusLab.Application.csproj" />
+  </ItemGroup>
+</Project>
+=== Backend\src\Application\FocusLab.Application.csproj
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\FocusLab.Domain.csproj" />
+  </ItemGroup>
+</Project>
+=== frontend\ViewModels\RegisterViewModel.cs
+using System;
+using System.Windows.Input;
+namespace frontend.ViewModels;
+public class RegisterViewModel : ViewModelBase
+{
+    private string _name;
+    private string _email;
+    private string _password;
+    private string _confirmPassword;
+    public string Name
+    {
+        get => _name;
+        set { _name = value; OnPropertyChanged(); }
+    }
+    public string Email
+    {
+        get => _email;
+        set { _email = value; OnPropertyChanged(); }
+    }
+    public string Password
+    {
+        get => _password;
+        set { _password = value; OnPropertyChanged(); }
+    }
+    public string ConfirmPassword
+    {
+        get => _confirmPassword;
+        set { _confirmPassword = value; OnPropertyChanged(); }
+    }
+    public ICommand RegisterCommand { get; }
+    public ICommand NavigateToLoginCommand { get; }
+    // 1. Додаємо конструктор за замовчуванням для XAML-парсетра
+    public RegisterViewModel()
+    {
+        RegisterCommand = new RelayCommand(obj => 
+        {
+            // Логіка реєстрації
+        }, obj => !string.IsNullOrEmpty(Email) && !string.IsNullOrEmpty(Password));
+    }
+    // 2. Конструктор з параметром для ручного виклику (якщо знадобиться)
+    public RegisterViewModel(Action navigateToLogin) : this()
+    {
+        NavigateToLoginCommand = new RelayCommand(obj => navigateToLogin?.Invoke());
+    }
+}
+=== frontend\ViewModels\ViewModelBase.cs
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+namespace frontend.ViewModels;
+public class ViewModelBase : INotifyPropertyChanged
+{
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+=== frontend\Views\RegisterView.xaml.cs
+using System.Windows.Controls;
+namespace frontend.Views
+{
+    public partial class RegisterView : UserControl
+    {
+        public RegisterView()
+        {
+            InitializeComponent();
+        }
+    }
+}
+=== frontend\MainWindow.xaml.cs
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+namespace frontend;
+public partial class MainWindow : Window
+{
+    public MainWindow()
+    {
+        InitializeComponent();
+    }
+}
+=== D:\Project\FocusLab\Backend\src\Domain\Entities\Account.cs
+namespace FocusLab.Domain.Entities;
+public class Account
+{
+    public const int LocalAccountId = 1;
+    public int Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
+    public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+}
+=== D:\Project\FocusLab\Backend\src\Domain\Entities\FocusSession.cs
+namespace FocusLab.Domain.Entities;
+public class FocusSession
+{
+    public int Id { get; set; }
+    public int TaskId { get; set; }
+    public DateTime StartDateTime { get; set; }
+    public int? EstimatedMinutes { get; set; }
+    public int DurationMinutes { get; set; }
+    public bool IsCompleted { get; set; }
+    public TaskItem Task { get; set; } = null!;
+}
+=== D:\Project\FocusLab\Backend\src\Domain\Entities\Tag.cs
+namespace FocusLab.Domain.Entities;
+public class Tag
+{
+    public int Id { get; set; }
+    public int AccountId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Color { get; set; }
+    public Account Account { get; set; } = null!;
+    public ICollection<TaskTag> TaskTags { get; set; } = new List<TaskTag>();
+}
+=== D:\Project\FocusLab\Backend\src\Domain\Entities\TaskItem.cs
+using FocusLab.Domain.Enums;
+using TaskStatus = FocusLab.Domain.Enums.TaskStatus;
+namespace FocusLab.Domain.Entities;
+public class TaskItem
+{
+    public int Id { get; set; }
+    public int AccountId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public DateTime? Deadline { get; set; }
+    public Priority Priority { get; set; } = Priority.Medium;
+    public TaskStatus Status { get; set; } = TaskStatus.Todo;
+    public DateTime CreatedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public Account Account { get; set; } = null!;
+    public ICollection<TaskTag> TaskTags { get; set; } = new List<TaskTag>();
+    public ICollection<TaskResource> Resources { get; set; } = new List<TaskResource>();
+    public ICollection<FocusSession> FocusSessions { get; set; } = new List<FocusSession>();
+}
+=== D:\Project\FocusLab\Backend\src\Domain\Entities\TaskResource.cs
+using FocusLab.Domain.Enums;
+namespace FocusLab.Domain.Entities;
+public class TaskResource
+{
+    public int Id { get; set; }
+    public int TaskId { get; set; }
+    public ResourceType Type { get; set; }
+    public string Path { get; set; } = string.Empty;
+    public TaskItem Task { get; set; } = null!;
+}
+=== D:\Project\FocusLab\Backend\src\Domain\Entities\TaskTag.cs
+namespace FocusLab.Domain.Entities;
+public class TaskTag
+{
+    public int TaskId { get; set; }
+    public int TagId { get; set; }
+    public TaskItem Task { get; set; } = null!;
+    public Tag Tag { get; set; } = null!;
+}
+=== D:\Project\FocusLab\Backend\src\Domain\Enums\Priority.cs
+namespace FocusLab.Domain.Enums;
+public enum Priority
+{
+    Low = 0,
+    Medium = 1,
+    High = 2,
+    Critical = 3
+}
+=== D:\Project\FocusLab\Backend\src\Domain\Enums\ResourceType.cs
+namespace FocusLab.Domain.Enums;
+public enum ResourceType
+{
+    File = 0,
+    Folder = 1,
+    Url = 2
+}
+=== D:\Project\FocusLab\Backend\src\Domain\Enums\TaskStatus.cs
+namespace FocusLab.Domain.Enums;
+// Увага: в System.Threading.Tasks теж є TaskStatus. У файлах, де підключено обидва
+// простори імен, використовуйте alias:
+//     using TaskStatus = FocusLab.Domain.Enums.TaskStatus;
+public enum TaskStatus
+{
+    Todo = 0,
+    InProgress = 1,
+    Review = 2,
+    Done = 3
+}
+=== D:\Project\FocusLab\Backend\src\Domain\obj\Debug\net8.0\.NETCoreApp,Version=v8.0.AssemblyAttributes.cs
+// <autogenerated />
+using System;
+using System.Reflection;
+[assembly: global::System.Runtime.Versioning.TargetFrameworkAttribute(".NETCoreApp,Version=v8.0", FrameworkDisplayName = ".NET 8.0")]
+=== D:\Project\FocusLab\Backend\src\Domain\obj\Debug\net8.0\FocusLab.Domain.AssemblyInfo.cs
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+using System;
+using System.Reflection;
+[assembly: System.Reflection.AssemblyCompanyAttribute("FocusLab.Domain")]
+[assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+02f45caab5284673d68467c22651b59276cc56a7")]
+[assembly: System.Reflection.AssemblyProductAttribute("FocusLab.Domain")]
+[assembly: System.Reflection.AssemblyTitleAttribute("FocusLab.Domain")]
+[assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
+// Generated by the MSBuild WriteCodeFragment class.
+=== D:\Project\FocusLab\Backend\src\Domain\obj\Debug\net8.0\FocusLab.Domain.GlobalUsings.g.cs
+// <auto-generated/>
+global using System;
+global using System.Collections.Generic;
+global using System.IO;
+global using System.Linq;
+global using System.Net.Http;
+global using System.Threading;
+global using System.Threading.Tasks;
+=== D:\Project\FocusLab\Backend\src\Infrastructure\Persistence\Configurations\AccountConfiguration.cs
+using FocusLab.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+namespace FocusLab.Infrastructure.Persistence.Configurations;
+public class AccountConfiguration : IEntityTypeConfiguration<Account>
+{
+    public void Configure(EntityTypeBuilder<Account> builder)
+    {
+        builder.ToTable("accounts");
+        builder.HasKey(a => a.Id);
+        builder.Property(a => a.Id).HasColumnName("id");
+        builder.Property(a => a.Username).HasColumnName("username").HasMaxLength(100).IsRequired();
+        builder.HasIndex(a => a.Username).IsUnique().HasDatabaseName("ux_accounts_username");
+        builder.Property(a => a.PasswordHash).HasColumnName("password_hash").HasMaxLength(255).IsRequired();
+        builder.Property(a => a.CreatedAt).HasColumnName("created_at")
+            .HasConversion(new UtcDateTimeConverter()).IsRequired();
+        // Локальний акаунт: застосунок офлайн, але tasks.account_id обов’язковий за моделлю даних.
+        builder.HasData(new
+        {
+            Id = Account.LocalAccountId,
+            Username = "local",
+            PasswordHash = string.Empty,
+            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+    }
+}
