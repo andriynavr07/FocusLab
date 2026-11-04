@@ -30,6 +30,7 @@ public partial class App : System.Windows.Application
 
                     s.AddSingleton<MainViewModel>();
                     s.AddTransient<RegisterViewModel>();
+                    s.AddTransient<LoginViewModel>();
                     s.AddTransient<HomeViewModel>();
 
                     s.AddSingleton<MainWindow>();

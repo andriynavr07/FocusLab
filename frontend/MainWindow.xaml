@@ -11,6 +11,9 @@
         Background="#0F172A">
     <ContentControl Content="{Binding Current}">
         <ContentControl.Resources>
+            <DataTemplate DataType="{x:Type vm:LoginViewModel}">
+                <views:LoginView/>
+            </DataTemplate>
             <DataTemplate DataType="{x:Type vm:RegisterViewModel}">
                 <views:RegisterView/>
             </DataTemplate>
