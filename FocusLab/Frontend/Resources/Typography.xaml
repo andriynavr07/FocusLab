@@ -1,0 +1,350 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ==================== ШРИФТ ==================== -->
+
+    <FontFamily x:Key="MainFontFamily">Inter</FontFamily>
+
+    <!-- ==================== НАКРЕСЛЕННЯ ==================== -->
+
+    <FontWeight x:Key="RegularFontWeight">Normal</FontWeight>
+    <FontWeight x:Key="MediumFontWeight">Medium</FontWeight>
+    <FontWeight x:Key="SemiBoldFontWeight">SemiBold</FontWeight>
+    <FontWeight x:Key="BoldFontWeight">Bold</FontWeight>
+    <FontWeight x:Key="ExtraBoldFontWeight">ExtraBold</FontWeight>
+
+    <!-- ==================== РОЗМІРИ З УСЬОГО МАКЕТА ==================== -->
+
+    <sys:Double x:Key="MicroFontSize">9</sys:Double>
+    <sys:Double x:Key="TinyFontSize">10</sys:Double>
+    <sys:Double x:Key="SmallFontSize">11</sys:Double>
+    <sys:Double x:Key="CaptionFontSize">12</sys:Double>
+    <sys:Double x:Key="ControlFontSize">13</sys:Double>
+    <sys:Double x:Key="BodyFontSize">14</sys:Double>
+    <sys:Double x:Key="BoardSectionFontSize">15</sys:Double>
+    <sys:Double x:Key="BrandFontSize">16</sys:Double>
+    <sys:Double x:Key="ProfileNameFontSize">18</sys:Double>
+    <sys:Double x:Key="PageTitleFontSize">20</sys:Double>
+    <sys:Double x:Key="BoardTitleFontSize">22</sys:Double>
+    <sys:Double x:Key="HeaderFontSize">24</sys:Double>
+    <sys:Double x:Key="CompactTimerFontSize">28</sys:Double>
+    <sys:Double x:Key="HeroFontSize">30</sys:Double>
+    <sys:Double x:Key="LargeTimerFontSize">44</sys:Double>
+
+    <!-- ==================== ФІКСОВАНІ МІЖРЯДКОВІ ІНТЕРВАЛИ ==================== -->
+    <!-- Перераховано з відсотків Figma у незалежні одиниці WPF. -->
+
+    <!-- 13 × задана висота рядка: 18 -->
+    <sys:Double x:Key="TaskTitleLineHeight">18</sys:Double>
+
+    <!-- 12 × 150% -->
+    <sys:Double x:Key="CaptionLineHeight">18</sys:Double>
+
+    <!-- 14 × 150% -->
+    <sys:Double x:Key="BodyLineHeight">21</sys:Double>
+
+    <!-- 14 × 155% -->
+    <sys:Double x:Key="TaskDescriptionLineHeight">21.7</sys:Double>
+
+    <!-- 14 × 160% -->
+    <sys:Double x:Key="BrandDescriptionLineHeight">22.4</sys:Double>
+
+    <!-- 24 × 125% -->
+    <sys:Double x:Key="HeaderLineHeight">30</sys:Double>
+
+    <!-- 30 × 120% -->
+    <sys:Double x:Key="HeroLineHeight">36</sys:Double>
+
+    <!-- ==================== БАЗОВИЙ СТИЛЬ ==================== -->
+    <!-- TextBrush визначений у словнику кольорів. -->
+
+    <Style x:Key="BaseTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily"
+                Value="{StaticResource MainFontFamily}" />
+        <Setter Property="FontSize"
+                Value="{StaticResource BodyFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource RegularFontWeight}" />
+        <Setter Property="Foreground"
+                Value="{DynamicResource TextBrush}" />
+    </Style>
+
+    <!-- ==================== ОСНОВНИЙ ТЕКСТ ==================== -->
+
+    <Style x:Key="BodyTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}" />
+
+    <Style x:Key="BodyMediumTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextStyle}">
+        <Setter Property="FontWeight"
+                Value="{StaticResource MediumFontWeight}" />
+    </Style>
+
+    <Style x:Key="BodySemiBoldTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextStyle}">
+        <Setter Property="FontWeight"
+                Value="{StaticResource SemiBoldFontWeight}" />
+    </Style>
+
+    <Style x:Key="BodyBoldTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextStyle}">
+        <Setter Property="FontWeight"
+                Value="{StaticResource BoldFontWeight}" />
+    </Style>
+
+    <Style x:Key="BodyParagraphTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextStyle}">
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="LineHeight"
+                Value="{StaticResource BodyLineHeight}" />
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+    </Style>
+
+    <!-- ==================== ЗАГОЛОВКИ ==================== -->
+
+    <!-- Заголовки сторінок у хедері: 20 / Bold -->
+    <Style x:Key="PageTitleTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource PageTitleFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource BoldFontWeight}" />
+    </Style>
+
+    <!-- Заголовок дошки: 22 / Bold -->
+    <Style x:Key="BoardTitleTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource PageTitleTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource BoardTitleFontSize}" />
+    </Style>
+
+    <!-- Заголовок у деталях задачі: 24 / SemiBold / 30 -->
+    <Style x:Key="HeaderTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource HeaderFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource SemiBoldFontWeight}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="LineHeight"
+                Value="{StaticResource HeaderLineHeight}" />
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+    </Style>
+
+    <Style x:Key="BoardSectionTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource BoardSectionFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource SemiBoldFontWeight}" />
+    </Style>
+
+    <!-- Заголовки колонок і підписи кнопок: 13 / SemiBold -->
+    <Style x:Key="ControlTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource ControlFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource SemiBoldFontWeight}" />
+    </Style>
+
+    <Style x:Key="ButtonTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource ControlTextStyle}" />
+
+    <Style x:Key="ColumnTitleTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource ControlTextStyle}" />
+
+    <!-- ==================== НАВІГАЦІЯ ТА ПОШУК ==================== -->
+
+    <Style x:Key="NavigationTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyMediumTextStyle}" />
+
+    <Style x:Key="ActiveNavigationTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodySemiBoldTextStyle}">
+        <Setter Property="Foreground"
+                Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="SearchPlaceholderTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource ControlFontSize}" />
+        <Setter Property="Foreground"
+                Value="{DynamicResource SecondaryTextBrush}" />
+    </Style>
+
+    <!-- ==================== ЗАДАЧІ ==================== -->
+
+    <Style x:Key="TaskTitleTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource ControlFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource MediumFontWeight}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="LineHeight"
+                Value="{StaticResource TaskTitleLineHeight}" />
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+    </Style>
+
+    <Style x:Key="CompletedTaskTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyMediumTextStyle}">
+        <Setter Property="TextDecorations" Value="Strikethrough" />
+    </Style>
+
+    <Style x:Key="TaskDescriptionTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyParagraphTextStyle}">
+        <Setter Property="Foreground"
+                Value="{DynamicResource SecondaryTextBrush}" />
+        <Setter Property="LineHeight"
+                Value="{StaticResource TaskDescriptionLineHeight}" />
+    </Style>
+
+    <!-- ==================== ПІДПИСИ ТА БЕЙДЖІ ==================== -->
+
+    <Style x:Key="CaptionTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource CaptionFontSize}" />
+        <Setter Property="Foreground"
+                Value="{DynamicResource SecondaryTextBrush}" />
+    </Style>
+
+    <Style x:Key="CaptionSemiBoldTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource CaptionTextStyle}">
+        <Setter Property="FontWeight"
+                Value="{StaticResource SemiBoldFontWeight}" />
+    </Style>
+
+    <Style x:Key="SmallTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource CaptionTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource SmallFontSize}" />
+    </Style>
+
+    <Style x:Key="BadgeTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource SmallFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource SemiBoldFontWeight}" />
+    </Style>
+
+    <Style x:Key="CountTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BadgeTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource TinyFontSize}" />
+    </Style>
+
+    <Style x:Key="FileTypeTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource CountTextStyle}">
+        <Setter Property="FontWeight"
+                Value="{StaticResource BoldFontWeight}" />
+        <Setter Property="Foreground"
+                Value="{DynamicResource WhiteBrush}" />
+    </Style>
+
+    <Style x:Key="CalendarTodayTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource MicroFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource BoldFontWeight}" />
+    </Style>
+
+    <!-- ==================== БРЕНД І ПРОФІЛЬ ==================== -->
+
+    <Style x:Key="BrandTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource BrandFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource BoldFontWeight}" />
+    </Style>
+
+    <Style x:Key="ProfileNameTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BrandTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource ProfileNameFontSize}" />
+    </Style>
+
+    <Style x:Key="HeroTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource HeroFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource BoldFontWeight}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="LineHeight"
+                Value="{StaticResource HeroLineHeight}" />
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+    </Style>
+
+    <Style x:Key="BrandDescriptionTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyParagraphTextStyle}">
+        <Setter Property="Foreground"
+                Value="{DynamicResource SecondaryTextBrush}" />
+        <Setter Property="LineHeight"
+                Value="{StaticResource BrandDescriptionLineHeight}" />
+    </Style>
+
+    <!-- ==================== ТАЙМЕР ==================== -->
+
+    <Style x:Key="CompactTimerTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BaseTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource CompactTimerFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource BoldFontWeight}" />
+        <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="TimerTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource CompactTimerTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource HeroFontSize}" />
+    </Style>
+
+    <Style x:Key="LargeTimerTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource CompactTimerTextStyle}">
+        <Setter Property="FontSize"
+                Value="{StaticResource LargeTimerFontSize}" />
+        <Setter Property="FontWeight"
+                Value="{StaticResource ExtraBoldFontWeight}" />
+    </Style>
+
+</ResourceDictionary>

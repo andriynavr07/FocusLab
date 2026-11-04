@@ -1,0 +1,19 @@
+<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="btn-reset">
+<rect x="0.5" y="0.5" width="29" height="29" rx="7.5" fill="#131B2E"/>
+<rect x="0.5" y="0.5" width="29" height="29" rx="7.5" stroke="#1F2E45"/>
+<g id="icon-reset reload clock" clip-path="url(#clip0_2002_258)">
+<g id="clock-arrow-up" clip-path="url(#clip1_2002_258)">
+<path id="Vector" d="M15 11.5003V15.0001L15.91 15.4551M15.7157 20.7897C14.5319 20.9361 13.3318 20.7161 12.2769 20.1595C11.2221 19.6029 10.3632 18.7363 9.81605 17.6765C9.26889 16.6168 9.05976 15.4148 9.21682 14.2326C9.37388 13.0504 9.88959 11.9447 10.6945 11.0645C11.4993 10.1843 12.5547 9.57203 13.7183 9.31007C14.8819 9.0481 16.0978 9.14907 17.2023 9.59937C18.3068 10.0497 19.2466 10.8277 19.8953 11.8285C20.5439 12.8294 20.8702 14.005 20.83 15.1969M20.8336 18.5L18.5002 16.1667L16.1667 18.5M18.5002 16.1667V20.8332" stroke-width="2" stroke-linecap="round" stroke="#94A3B8"/>
+</g>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_2002_258">
+<rect width="14" height="14" fill="white" transform="translate(8 8)"/>
+</clipPath>
+<clipPath id="clip1_2002_258">
+<rect width="14" height="14" fill="white" transform="translate(8 8)"/>
+</clipPath>
+</defs>
+</svg>
