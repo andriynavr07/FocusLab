@@ -1,55 +1,59 @@
-﻿using System;
 using System.Windows.Input;
+using Frontend.Services;
 
-namespace frontend.ViewModels;
+namespace Frontend.ViewModels;
 
-public class RegisterViewModel : ViewModelBase
+public class RegisterViewModel : PageViewModelBase
 {
-    private string _name;
-    private string _email;
-    private string _password;
-    private string _confirmPassword;
+    private readonly LocalAuthSession _auth;
+    private string _name = string.Empty;
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private string _confirmPassword = string.Empty;
+    private string _errorMessage = string.Empty;
+    private bool _isBusy;
 
-    public string Name
-    {
-        get => _name;
-        set { _name = value; OnPropertyChanged(); }
-    }
+    public event Action? Registered;
+    public event Action? LoginRequested;
 
-    public string Email
-    {
-        get => _email;
-        set { _email = value; OnPropertyChanged(); }
-    }
-
-    public string Password
-    {
-        get => _password;
-        set { _password = value; OnPropertyChanged(); }
-    }
-
-    public string ConfirmPassword
-    {
-        get => _confirmPassword;
-        set { _confirmPassword = value; OnPropertyChanged(); }
-    }
-
+    public string Name { get => _name; set { _name = value; OnPropertyChanged(); } }
+    public string Email { get => _email; set { _email = value; OnPropertyChanged(); } }
+    public string Password { get => _password; set { _password = value; OnPropertyChanged(); } }
+    public string ConfirmPassword { get => _confirmPassword; set { _confirmPassword = value; OnPropertyChanged(); } }
+    public string ErrorMessage { get => _errorMessage; private set { _errorMessage = value; OnPropertyChanged(); } }
 
     public ICommand RegisterCommand { get; }
     public ICommand NavigateToLoginCommand { get; }
 
-    // 1. Додаємо конструктор за замовчуванням для XAML-парсетра
-    public RegisterViewModel()
+    public RegisterViewModel(LocalAuthSession auth)
     {
-        RegisterCommand = new RelayCommand(obj => 
-        {
-            // Логіка реєстрації
-        }, obj => !string.IsNullOrEmpty(Email) && !string.IsNullOrEmpty(Password));
+        _auth = auth;
+        RegisterCommand = new RelayCommand(
+            _ => Register(),
+            _ => !_isBusy
+                 && !string.IsNullOrWhiteSpace(Name)
+                 && !string.IsNullOrWhiteSpace(Email)
+                 && !string.IsNullOrEmpty(Password));
+        NavigateToLoginCommand = new RelayCommand(_ => LoginRequested?.Invoke());
     }
 
-    // 2. Конструктор з параметром для ручного виклику (якщо знадобиться)
-    public RegisterViewModel(Action navigateToLogin) : this()
+    private void Register()
     {
-        NavigateToLoginCommand = new RelayCommand(obj => navigateToLogin?.Invoke());
+        ErrorMessage = string.Empty;
+        if (Password != ConfirmPassword)
+        {
+            ErrorMessage = "Паролі не збігаються.";
+            return;
+        }
+
+        _isBusy = true;
+        try
+        {
+            if (_auth.TryRegister(Name, Email, Password, out var error))
+                Registered?.Invoke();
+            else
+                ErrorMessage = error;
+        }
+        finally { _isBusy = false; }
     }
 }
