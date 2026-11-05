@@ -8,6 +8,7 @@ namespace FocusLab.Application.Services;
 public class TaskService : ITaskService
 {
     public const int MaxTitleLength = 255;
+    public const int MaxProjectLength = 100;
 
     private readonly ITaskRepository _repository;
     private readonly IClock _clock;
@@ -33,6 +34,7 @@ public class TaskService : ITaskService
             AccountId = task.AccountId,
             Title = ValidateTitle(task.Title),
             Description = task.Description,
+            Project = NormalizeProject(task.Project),
             Deadline = task.Deadline,
             Priority = task.Priority,
             Status = TaskStatus.Todo,          // нова задача завжди починає з Todo
@@ -52,6 +54,7 @@ public class TaskService : ITaskService
 
         entity.Title = ValidateTitle(task.Title);
         entity.Description = task.Description;
+        entity.Project = NormalizeProject(task.Project);
         entity.Deadline = task.Deadline;
         entity.Priority = task.Priority;
 
@@ -80,12 +83,22 @@ public class TaskService : ITaskService
         return trimmed;
     }
 
+    private static string? NormalizeProject(string? project)
+    {
+        if (string.IsNullOrWhiteSpace(project)) return null;
+        var trimmed = project.Trim();
+        return trimmed.Length <= MaxProjectLength
+            ? trimmed
+            : throw new ArgumentException($"Назва проєкту не може бути довшою за {MaxProjectLength} символів.", nameof(project));
+    }
+
     private static TaskDto ToDto(TaskItem t) => new()
     {
         Id = t.Id,
         AccountId = t.AccountId,
         Title = t.Title,
         Description = t.Description,
+        Project = t.Project,
         Deadline = t.Deadline,
         Priority = t.Priority,
         Status = t.Status,

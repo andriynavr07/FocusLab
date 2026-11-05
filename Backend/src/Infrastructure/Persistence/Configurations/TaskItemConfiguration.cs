@@ -16,6 +16,7 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.Property(t => t.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(t => t.Title).HasColumnName("title").HasMaxLength(255).IsRequired();
         builder.Property(t => t.Description).HasColumnName("description");
+        builder.Property(t => t.Project).HasColumnName("project").HasMaxLength(100);
 
         builder.Property(t => t.Deadline).HasColumnName("deadline")
             .HasConversion(new NullableUtcDateTimeConverter());
