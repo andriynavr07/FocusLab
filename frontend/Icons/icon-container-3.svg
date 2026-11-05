@@ -1,0 +1,18 @@
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="icon-container-3">
+<rect width="28" height="28" rx="6" fill="#0D1424"/>
+<g id="icon-checked circle box outline" clip-path="url(#clip0_2002_290)">
+<g id="check-circle" clip-path="url(#clip1_2002_290)">
+<path id="Vector" d="M20.5331 12.6668C20.8376 14.161 20.6206 15.7144 19.9183 17.068C19.2161 18.4216 18.071 19.4935 16.6741 20.105C15.2772 20.7165 13.7128 20.8306 12.242 20.4284C10.7711 20.0261 9.48255 19.1317 8.59127 17.8944C7.7 16.6571 7.25984 15.1516 7.3442 13.629C7.42856 12.1065 8.03234 10.6588 9.05486 9.52756C10.0774 8.39628 11.4568 7.64974 12.9631 7.41242C14.4695 7.1751 16.0116 7.46136 17.3324 8.22345M11.9993 13.3331L13.9993 15.3331L20.666 8.66646" stroke-width="2" stroke-linecap="round" stroke="#2A75FF"/>
+</g>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_2002_290">
+<rect width="16" height="16" fill="white" transform="translate(6 6)"/>
+</clipPath>
+<clipPath id="clip1_2002_290">
+<rect width="16" height="16" fill="white" transform="translate(6 6)"/>
+</clipPath>
+</defs>
+</svg>
