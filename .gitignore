@@ -1,0 +1,21 @@
+## Build
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.log
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+## Тестові результати
+TestResults/
+
+## Локальні БД (dotnet ef design-time)
+*.design.db
+*.db-shm
+*.db-wal
