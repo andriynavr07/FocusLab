@@ -10,6 +10,7 @@ public class TaskDto
     public int AccountId { get; set; } = Account.LocalAccountId;
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? Project { get; set; }
     public DateTime? Deadline { get; set; }
     public Priority Priority { get; set; } = Priority.Medium;
     public TaskStatus Status { get; set; } = TaskStatus.Todo;
