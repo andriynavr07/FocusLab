@@ -1,7 +1,7 @@
 using System.Windows.Controls;
-using frontend.ViewModels;
+using Frontend.ViewModels;
 
-namespace frontend.Views
+namespace Frontend.Views
 {
     public partial class RegisterView : UserControl
     {

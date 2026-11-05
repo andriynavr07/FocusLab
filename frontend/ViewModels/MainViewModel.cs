@@ -1,25 +1,27 @@
-﻿using FocusLab.Application.Abstractions;
-using Microsoft.Extensions.DependencyInjection;
+using Frontend.Services;
 
-namespace frontend.ViewModels;
+namespace Frontend.ViewModels;
 
 public class MainViewModel : ViewModelBase
 {
-    private readonly IServiceProvider _sp;
+    private readonly LocalAuthSession _auth;
     private ViewModelBase? _current;
 
     public ViewModelBase? Current
     {
         get => _current;
-        private set { _current = value; OnPropertyChanged(); }
+        private set
+        {
+            _current = value;
+            OnPropertyChanged();
+        }
     }
 
-    public MainViewModel(IServiceProvider sp) => _sp = sp;
+    public MainViewModel(LocalAuthSession auth) => _auth = auth;
 
-    public async Task StartAsync()
+    public void Start()
     {
-        var auth = _sp.GetRequiredService<IAuthService>();
-        if (await auth.IsRegisteredAsync())
+        if (_auth.HasAccount)
             ShowLogin();
         else
             ShowRegister();
@@ -27,19 +29,18 @@ public class MainViewModel : ViewModelBase
 
     private void ShowRegister()
     {
-        var vm = _sp.GetRequiredService<RegisterViewModel>();
-        vm.Registered += ShowHome;
-        vm.LoginRequested += ShowLogin;
-        Current = vm;
+        var viewModel = new RegisterViewModel(_auth);
+        viewModel.Registered += ShowWorkspace;
+        viewModel.LoginRequested += ShowLogin;
+        Current = viewModel;
     }
 
     private void ShowLogin()
     {
-        var vm = _sp.GetRequiredService<LoginViewModel>();
-        vm.LoggedIn += ShowHome;
-        vm.RegisterRequested += ShowRegister;
-        Current = vm;
+        var viewModel = new LoginViewModel(_auth, ShowWorkspace);
+        viewModel.RegisterRequested += ShowRegister;
+        Current = viewModel;
     }
 
-    private void ShowHome() => Current = _sp.GetRequiredService<HomeViewModel>();
+    private void ShowWorkspace() => Current = new WorkspaceViewModel(onLogout: ShowLogin);
 }

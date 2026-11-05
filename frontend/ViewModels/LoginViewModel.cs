@@ -1,18 +1,18 @@
 using System.Windows.Input;
-using FocusLab.Application.Abstractions;
+using Frontend.Services;
 
-namespace frontend.ViewModels;
+namespace Frontend.ViewModels;
 
 public class LoginViewModel : ViewModelBase
 {
-    private readonly IAuthService _auth;
+    private readonly LocalAuthSession _auth;
+    private readonly Action _onLoginSuccess;
     private string _email = string.Empty;
     private string _password = string.Empty;
     private string _errorMessage = string.Empty;
     private bool _isBusy;
     private bool _rememberMe;
 
-    public event Action? LoggedIn;
     public event Action? RegisterRequested;
 
     public string Email
@@ -52,18 +52,19 @@ public class LoginViewModel : ViewModelBase
     public ICommand LoginCommand { get; }
     public ICommand NavigateToRegisterCommand { get; }
 
-    public LoginViewModel(IAuthService auth)
+    public LoginViewModel(LocalAuthSession auth, Action onLoginSuccess)
     {
         _auth = auth;
+        _onLoginSuccess = onLoginSuccess ?? throw new ArgumentNullException(nameof(onLoginSuccess));
         LoginCommand = new RelayCommand(
-            async _ => await LoginAsync(),
+            _ => Login(),
             _ => !_isBusy
                  && !string.IsNullOrWhiteSpace(Email)
                  && !string.IsNullOrEmpty(Password));
         NavigateToRegisterCommand = new RelayCommand(_ => RegisterRequested?.Invoke());
     }
 
-    private async Task LoginAsync()
+    private void Login()
     {
         ErrorMessage = string.Empty;
         _isBusy = true;
@@ -71,15 +72,10 @@ public class LoginViewModel : ViewModelBase
 
         try
         {
-            var result = await _auth.LoginAsync(Email, Password);
-            if (result.Success)
-                LoggedIn?.Invoke();
+            if (_auth.TryLogin(Email, Password))
+                _onLoginSuccess();
             else
-                ErrorMessage = result.Error ?? "Не вдалося увійти.";
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = "Помилка: " + ex.Message;
+                ErrorMessage = "Невірна пошта або пароль. Зареєструйтеся в цьому запуску застосунку.";
         }
         finally
         {
