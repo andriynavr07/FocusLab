@@ -1,9 +1,10 @@
 using System.Windows.Input;
+using System.Windows;
 using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
-public class LoginViewModel : ViewModelBase
+public class LoginViewModel : PageViewModelBase
 {
     private readonly LocalAuthSession _auth;
     private readonly Action _onLoginSuccess;
@@ -51,6 +52,7 @@ public class LoginViewModel : ViewModelBase
 
     public ICommand LoginCommand { get; }
     public ICommand NavigateToRegisterCommand { get; }
+    public ICommand ForgotPasswordCommand { get; }
 
     public LoginViewModel(LocalAuthSession auth, Action onLoginSuccess)
     {
@@ -62,6 +64,12 @@ public class LoginViewModel : ViewModelBase
                  && !string.IsNullOrWhiteSpace(Email)
                  && !string.IsNullOrEmpty(Password));
         NavigateToRegisterCommand = new RelayCommand(_ => RegisterRequested?.Invoke());
+        ForgotPasswordCommand = new RelayCommand(_ =>
+            MessageBox.Show(
+                "Відновлення пароля недоступне для локального акаунта. Зареєструйте акаунт або використайте пароль, збережений під час реєстрації.",
+                "Відновлення пароля",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information));
     }
 
     private void Login()

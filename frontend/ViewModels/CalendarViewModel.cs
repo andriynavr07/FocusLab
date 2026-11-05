@@ -11,6 +11,7 @@ public class CalendarEvent
     public int Minutes { get; init; }
     public string Project { get; init; } = "";
     public string Kind { get; init; } = "Accent"; // Accent | Success | Danger
+    public bool IsDone { get; init; }
 
     public string TimeRange => $"{Start:hh\\:mm} - {Start.Add(TimeSpan.FromMinutes(Minutes)):hh\\:mm}";
     public string Meta => $"{Duration} • {Project}";
@@ -43,22 +44,22 @@ public class CalendarViewModel : PageViewModelBase
     private static readonly string[] DayNames =
         { "Понеділок", "Вівторок", "Середа", "Четвер", "П’ятниця", "Субота", "Неділя" };
 
-    private static readonly (int h, int m, int min, string title, string project)[] Slots =
-    {
-        (9, 0, 60, "Створити UML-моделі", "Сфокусовано"),
-        (11, 30, 45, "Описати основні сценарії", "План запуску"),
-        (14, 0, 180, "Спроєктувати користувацький інтерфейс", "Backend V2")
-    };
-
-    private static readonly string[] Kinds = { "Accent", "Success", "Danger" };
-
+    private readonly TaskBoardStore _store;
     private DateTime _month = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private DateTime _selected = DateTime.Today;
 
-    public CalendarViewModel()
+    public CalendarViewModel(TaskBoardStore store)
     {
+        _store = store;
         PrevMonthCommand = new RelayCommand(_ => ChangeMonth(-1));
         NextMonthCommand = new RelayCommand(_ => ChangeMonth(1));
+        _store.Changed += (_, _) =>
+        {
+            Build();
+            LoadSelected();
+            OnPropertyChanged(nameof(MonthTasksText));
+            OnPropertyChanged(nameof(DonePercentText));
+        };
         Build();
         LoadSelected();
     }
@@ -94,9 +95,11 @@ public class CalendarViewModel : PageViewModelBase
     {
         get
         {
-            var all = MonthEvents().ToList();
+            var all = _store.Rows
+                .Where(row => row.DueDate.Year == _month.Year && row.DueDate.Month == _month.Month)
+                .ToList();
             if (all.Count == 0) return "0%";
-            var done = all.Count(e => e.date < DateTime.Today);
+            var done = all.Count(row => row.IsDone);
             return $"{Math.Round(100.0 * done / all.Count)}%";
         }
     }
@@ -118,9 +121,11 @@ public class CalendarViewModel : PageViewModelBase
     protected override void OnSearchChanged() => LoadSelected();
 
     private IEnumerable<(DateTime date, CalendarEvent ev)> MonthEventsRaw() =>
-        Enumerable.Range(1, DateTime.DaysInMonth(_month.Year, _month.Month))
-            .Select(d => new DateTime(_month.Year, _month.Month, d))
-            .SelectMany(d => EventsFor(d).Select(e => (d, e)));
+        _store.Rows
+            .Where(row => row.DueDate.Year == _month.Year && row.DueDate.Month == _month.Month)
+            .OrderBy(row => row.DueDate)
+            .ThenBy(row => row.Title)
+            .Select((row, index) => (row.DueDate.Date, CreateEvent(row, index)));
 
     private IEnumerable<(DateTime date, CalendarEvent ev)> MonthEvents() => MonthEventsRaw();
 
@@ -173,7 +178,7 @@ public class CalendarViewModel : PageViewModelBase
         foreach (var e in EventsFor(_selected))
         {
             if (!string.IsNullOrWhiteSpace(SearchText) &&
-                !e.Title.Contains(SearchText, StringComparison.OrdinalIgnoreCase)) continue;
+                !($"{e.Title} {e.Project}".Contains(SearchText, StringComparison.OrdinalIgnoreCase))) continue;
             SelectedEvents.Add(e);
         }
 
@@ -182,17 +187,24 @@ public class CalendarViewModel : PageViewModelBase
         OnPropertyChanged(nameof(AdviceText));
     }
 
-    // Демо-дані → замінити на API
-    private static List<CalendarEvent> EventsFor(DateTime d)
+    private List<CalendarEvent> EventsFor(DateTime date) =>
+        _store.Rows
+            .Where(row => row.DueDate.Date == date.Date)
+            .OrderBy(row => row.Title)
+            .Select((row, index) => CreateEvent(row, index))
+            .ToList();
+
+    private static CalendarEvent CreateEvent(TaskRow row, int index)
     {
-        var n = (d.Day * 3 + d.Month) % 4; // 0..3 події на день
-        return Slots.Take(n).Select((s, i) => new CalendarEvent
+        var startHour = 9 + index;
+        return new CalendarEvent
         {
-            Title = s.title,
-            Start = new TimeSpan(s.h, s.m, 0),
-            Minutes = s.min,
-            Project = s.project,
-            Kind = Kinds[(d.Day + i) % 3]
-        }).ToList();
+            Title = row.Title,
+            Start = new TimeSpan(startHour, 0, 0),
+            Minutes = 25,
+            Project = row.Project,
+            Kind = row.IsDone ? "Success" : row.IsOverdue ? "Danger" : "Accent",
+            IsDone = row.IsDone
+        };
     }
 }

@@ -3,7 +3,7 @@ using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
-public class RegisterViewModel : ViewModelBase
+public class RegisterViewModel : PageViewModelBase
 {
     private readonly LocalAuthSession _auth;
     private string _name = string.Empty;

@@ -8,14 +8,14 @@
              d:DesignWidth="1440"
              FontFamily="{StaticResource MainFontFamily}"
              FontSize="{StaticResource BodyFontSize}"
-             Background="{DynamicResource DarkBackgroundBrush}"
+             Background="{DynamicResource FlBg}"
              UseLayoutRounding="True"
              SnapsToDevicePixels="True">
 
     <Viewbox Stretch="Uniform">
         <Grid Width="1440"
               Height="900"
-              Background="{DynamicResource DarkBackgroundBrush}">
+              Background="{DynamicResource FlBg}">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="560"/>
@@ -25,8 +25,8 @@
             <!-- ==================== ЛІВА ПАНЕЛЬ ==================== -->
 
             <Border Grid.Column="0"
-                    Background="{DynamicResource DarkSurfaceBrush}"
-                    BorderBrush="{DynamicResource DarkBorderBrush}"
+                    Background="{DynamicResource FlSurface}"
+                    BorderBrush="{DynamicResource FlLine}"
                     BorderThickness="0,0,1,0">
 
                 <Grid Margin="{StaticResource BrandPanelPadding}">
@@ -61,7 +61,7 @@
                             <TextBlock Text="FocusLab"
                                        Margin="12,0,0,0"
                                        Style="{StaticResource PageTitleTextStyle}"
-                                       Foreground="{DynamicResource WhiteBrush}"
+                                       Foreground="{DynamicResource FlText}"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
 
@@ -70,15 +70,17 @@
                                     VerticalAlignment="Center">
 
                             <Button Width="49"
-                                    Content="Light"
+                                    Content="{Binding ThemeButtonText}"
                                     ToolTip="Світла тема"
-                                    Style="{StaticResource RegisterToggleStyle}"/>
+                                    Style="{StaticResource RegisterToggleStyle}"
+                                    Command="{Binding ToggleThemeCommand}"/>
 
                             <Button Width="37"
-                                    Content="EN"
+                                    Content="{Binding LanguageButtonText}"
                                     Margin="26,0,0,0"
                                     ToolTip="English"
-                                    Style="{StaticResource RegisterToggleStyle}"/>
+                                    Style="{StaticResource RegisterToggleStyle}"
+                                    Command="{Binding ToggleLanguageCommand}"/>
                         </StackPanel>
                     </Grid>
 
@@ -87,8 +89,8 @@
                                 VerticalAlignment="Center">
 
                         <Border Height="220"
-                                Background="{DynamicResource DarkIllustrationBackgroundBrush}"
-                                BorderBrush="{DynamicResource DarkBorderBrush}"
+                                Background="{DynamicResource FlSurface2}"
+                                BorderBrush="{DynamicResource FlLine}"
                                 BorderThickness="1"
                                 CornerRadius="{StaticResource CornerRadius16}">
 
@@ -105,7 +107,7 @@
 
                                     <TextBlock Text="25:00"
                                                Style="{StaticResource TimerTextStyle}"
-                                               Foreground="{DynamicResource WhiteBrush}"/>
+                                               Foreground="{DynamicResource FlText}"/>
 
                                     <TextBlock Text="ФОКУСУВАННЯ"
                                                Margin="0,4,0,0"
@@ -119,14 +121,14 @@
                         <TextBlock Text="Сплануй свій день"
                                    Margin="0,24,0,0"
                                    Style="{StaticResource HeroTextStyle}"
-                                   Foreground="{DynamicResource WhiteBrush}"
+                                   Foreground="{DynamicResource FlText}"
                                    TextAlignment="Center"/>
 
                         <TextBlock Width="307"
                                    Margin="0,12,0,0"
                                    Text="Працюй, розвивайся, контролюй, але не забувай про відпочинок"
                                    Style="{StaticResource BrandDescriptionTextStyle}"
-                                   Foreground="{DynamicResource DarkSecondaryTextBrush}"
+                                   Foreground="{DynamicResource FlMuted}"
                                    HorizontalAlignment="Center"
                                    TextAlignment="Center"/>
                     </StackPanel>
@@ -136,7 +138,7 @@
                                HorizontalAlignment="Left"
                                Text="© 2026 FocusLab. Фокусуйся, одна сесія за раз."
                                Style="{StaticResource CaptionTextStyle}"
-                               Foreground="{DynamicResource SlateTextBrush}"
+                               Foreground="{DynamicResource FlMuted}"
                                TextWrapping="Wrap"/>
                 </Grid>
             </Border>
@@ -149,8 +151,8 @@
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center">
 
-                <Border Background="{DynamicResource DarkSurfaceBrush}"
-                        BorderBrush="{DynamicResource DarkBorderBrush}"
+                <Border Background="{DynamicResource FlSurface}"
+                        BorderBrush="{DynamicResource FlLine}"
                         BorderThickness="1"
                         CornerRadius="{StaticResource CornerRadius16}"/>
 
@@ -158,12 +160,12 @@
 
                     <TextBlock Text="ВІТАЄМО!"
                                Style="{StaticResource HeroTextStyle}"
-                               Foreground="{DynamicResource WhiteBrush}"/>
+                               Foreground="{DynamicResource FlText}"/>
 
                     <TextBlock Text="авторизуйтесь для фокусування на роботі"
                                Margin="0,8,0,24"
                                Style="{StaticResource BodyParagraphTextStyle}"
-                               Foreground="{DynamicResource DarkSecondaryTextBrush}"/>
+                               Foreground="{DynamicResource FlMuted}"/>
 
                     <!-- Електронна пошта -->
                     <TextBlock Text="Ел. пошта"
@@ -200,14 +202,15 @@
                                   IsChecked="{Binding RememberMe, Mode=TwoWay}"
                                   FontFamily="{StaticResource MainFontFamily}"
                                   FontSize="{StaticResource ControlFontSize}"
-                                  Foreground="{DynamicResource DarkSecondaryTextBrush}"
+                                  Foreground="{DynamicResource FlMuted}"
                                   VerticalContentAlignment="Center"
                                   VerticalAlignment="Center"/>
 
                         <Button Grid.Column="1"
                                 Content="Забули пароль?"
                                 FontSize="{StaticResource ControlFontSize}"
-                                Style="{StaticResource RegisterLinkStyle}"/>
+                                Style="{StaticResource RegisterLinkStyle}"
+                                Command="{Binding ForgotPasswordCommand}"/>
                     </Grid>
 
                     <TextBlock Text="{Binding ErrorMessage}"
@@ -227,7 +230,7 @@
 
                         <TextBlock Text="Ще не зареєстровані?"
                                    Style="{StaticResource BodyTextStyle}"
-                                   Foreground="{DynamicResource DarkSecondaryTextBrush}"
+                                   Foreground="{DynamicResource FlMuted}"
                                    VerticalAlignment="Center"/>
 
                         <Button Content="Створити акаунт"

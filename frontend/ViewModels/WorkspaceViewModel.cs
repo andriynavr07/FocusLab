@@ -1,10 +1,17 @@
 using System.Windows.Input;
+using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
 public class WorkspaceViewModel : ViewModelBase
 {
     private readonly Action _onLogout;
+    private readonly TaskBoardStore _taskStore;
+    private readonly DashboardViewModel _dashboard;
+    private readonly TasksViewModel _tasks;
+    private readonly CalendarViewModel _calendar;
+    private readonly TimerViewModel _timer;
+    private readonly SettingsViewModel _settings;
     private PageViewModelBase _currentPage;
 
     public PageViewModelBase CurrentPage
@@ -12,11 +19,7 @@ public class WorkspaceViewModel : ViewModelBase
         get => _currentPage;
         private set
         {
-            if (_currentPage is not null)
-                _currentPage.NewTaskRequested -= OpenNewTask;
-
             _currentPage = value;
-            _currentPage.NewTaskRequested += OpenNewTask;
             OnPropertyChanged();
         }
     }
@@ -31,21 +34,32 @@ public class WorkspaceViewModel : ViewModelBase
     public WorkspaceViewModel(Action onLogout)
     {
         _onLogout = onLogout ?? throw new ArgumentNullException(nameof(onLogout));
-        _currentPage = new DashboardViewModel();
-        _currentPage.NewTaskRequested += OpenNewTask;
+        _taskStore = new TaskBoardStore();
+        _timer = new TimerViewModel();
+        _dashboard = new DashboardViewModel(_taskStore, _timer);
+        _tasks = new TasksViewModel(_taskStore);
+        _calendar = new CalendarViewModel(_taskStore);
+        _settings = new SettingsViewModel(_timer);
+        _currentPage = _dashboard;
 
-        ShowDashboardCommand = new RelayCommand(_ => CurrentPage = new DashboardViewModel());
-        ShowTasksCommand = new RelayCommand(_ => CurrentPage = new TasksViewModel());
-        ShowCalendarCommand = new RelayCommand(_ => CurrentPage = new CalendarViewModel());
-        ShowTimerCommand = new RelayCommand(_ => CurrentPage = new TimerViewModel());
-        ShowSettingsCommand = new RelayCommand(_ => CurrentPage = new SettingsViewModel());
-        LogoutCommand = new RelayCommand(_ => _onLogout());
+        foreach (var page in new PageViewModelBase[] { _dashboard, _tasks, _calendar, _timer, _settings })
+            page.NewTaskRequested += OpenNewTask;
+
+        ShowDashboardCommand = new RelayCommand(_ => CurrentPage = _dashboard);
+        ShowTasksCommand = new RelayCommand(_ => CurrentPage = _tasks);
+        ShowCalendarCommand = new RelayCommand(_ => CurrentPage = _calendar);
+        ShowTimerCommand = new RelayCommand(_ => CurrentPage = _timer);
+        ShowSettingsCommand = new RelayCommand(_ => CurrentPage = _settings);
+        LogoutCommand = new RelayCommand(_ =>
+        {
+            _timer.PauseCommand.Execute(null);
+            _onLogout();
+        });
     }
 
     private void OpenNewTask()
     {
-        var tasks = new TasksViewModel();
-        CurrentPage = tasks;
-        tasks.OpenNewTaskCommand.Execute(null);
+        CurrentPage = _tasks;
+        _tasks.OpenNewTaskCommand.Execute(null);
     }
 }

@@ -7,7 +7,7 @@
              d:DesignWidth="1440"
              d:DesignHeight="900"
              FontFamily="{StaticResource MainFontFamily}"
-             Background="{DynamicResource DarkBackgroundBrush}"
+             Background="{DynamicResource FlBg}"
              UseLayoutRounding="True">
 
     <UserControl.Resources>
@@ -18,7 +18,7 @@
             <Setter Property="Padding"
                     Value="{StaticResource NavigationItemPadding}"/>
             <Setter Property="Foreground"
-                    Value="{DynamicResource DarkSecondaryTextBrush}"/>
+                    Value="{DynamicResource FlMuted}"/>
             <Setter Property="Background"
                     Value="{DynamicResource TransparentBrush}"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -61,7 +61,7 @@
                                 </MultiTrigger.Conditions>
                                 <Setter TargetName="ItemBorder"
                                         Property="Background"
-                                        Value="{DynamicResource DarkInputBackgroundBrush}"/>
+                                        Value="{DynamicResource FlSurface2}"/>
                             </MultiTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -83,7 +83,7 @@
     <Viewbox Stretch="Uniform">
         <Grid Width="1440"
               Height="900"
-              Background="{DynamicResource DarkBackgroundBrush}">
+              Background="{DynamicResource FlBg}">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="240"/>
@@ -92,8 +92,8 @@
 
             <!-- Постійна бічна панель -->
             <Border Grid.Column="0"
-                    Background="{DynamicResource DarkBackgroundBrush}"
-                    BorderBrush="{DynamicResource DarkBorderBrush}"
+                    Background="{DynamicResource FlBg}"
+                    BorderBrush="{DynamicResource FlLine}"
                     BorderThickness="0,0,1,0">
 
                 <Grid Margin="{StaticResource SidebarPadding}">
@@ -124,7 +124,7 @@
                         <TextBlock Text="FocusLab"
                                    Margin="10,0,0,0"
                                    Style="{StaticResource BrandTextStyle}"
-                                   Foreground="{DynamicResource WhiteBrush}"
+                                   Foreground="{DynamicResource FlText}"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
 
@@ -160,7 +160,7 @@
                                 </StackPanel>
 
                                 <Border Grid.Column="1"
-                                        Background="{DynamicResource DarkSurfaceBrush}"
+                                        Background="{DynamicResource FlSurface2}"
                                         Padding="{StaticResource CountBadgePadding}"
                                         CornerRadius="{StaticResource CornerRadius10}">
                                     <TextBlock Text="8"
@@ -200,7 +200,7 @@
                             Command="{Binding LogoutCommand}"
                             Padding="{StaticResource NavigationItemPadding}"
                             HorizontalContentAlignment="Left"
-                            Foreground="{DynamicResource DarkSecondaryTextBrush}"
+                            Foreground="{DynamicResource FlMuted}"
                             Background="{DynamicResource TransparentBrush}"
                             BorderThickness="0"
                             Cursor="Hand"/>
