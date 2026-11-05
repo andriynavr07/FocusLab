@@ -1,12 +1,12 @@
-using System.Windows.Input;
 using System.Windows;
-using Frontend.Services;
+using System.Windows.Input;
+using FocusLab.Application.Abstractions;
 
 namespace Frontend.ViewModels;
 
 public class LoginViewModel : PageViewModelBase
 {
-    private readonly LocalAuthSession _auth;
+    private readonly IAuthService _auth;
     private readonly Action _onLoginSuccess;
     private string _email = string.Empty;
     private string _password = string.Empty;
@@ -54,25 +54,25 @@ public class LoginViewModel : PageViewModelBase
     public ICommand NavigateToRegisterCommand { get; }
     public ICommand ForgotPasswordCommand { get; }
 
-    public LoginViewModel(LocalAuthSession auth, Action onLoginSuccess)
+    public LoginViewModel(IAuthService auth, Action onLoginSuccess)
     {
         _auth = auth;
         _onLoginSuccess = onLoginSuccess ?? throw new ArgumentNullException(nameof(onLoginSuccess));
         LoginCommand = new RelayCommand(
-            _ => Login(),
+            async _ => await LoginAsync(),
             _ => !_isBusy
                  && !string.IsNullOrWhiteSpace(Email)
                  && !string.IsNullOrEmpty(Password));
         NavigateToRegisterCommand = new RelayCommand(_ => RegisterRequested?.Invoke());
         ForgotPasswordCommand = new RelayCommand(_ =>
             MessageBox.Show(
-                "Відновлення пароля недоступне для локального акаунта. Зареєструйте акаунт або використайте пароль, збережений під час реєстрації.",
+                "Відновлення пароля недоступне для локального акаунта.",
                 "Відновлення пароля",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information));
     }
 
-    private void Login()
+    private async Task LoginAsync()
     {
         ErrorMessage = string.Empty;
         _isBusy = true;
@@ -80,10 +80,15 @@ public class LoginViewModel : PageViewModelBase
 
         try
         {
-            if (_auth.TryLogin(Email, Password))
+            var result = await _auth.LoginAsync(Email, Password);
+            if (result.Success)
                 _onLoginSuccess();
             else
-                ErrorMessage = "Невірна пошта або пароль. Зареєструйтеся в цьому запуску застосунку.";
+                ErrorMessage = result.Error ?? "Невірна пошта або пароль.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Помилка входу: {ex.Message}";
         }
         finally
         {

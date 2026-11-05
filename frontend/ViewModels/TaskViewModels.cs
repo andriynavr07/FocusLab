@@ -21,7 +21,10 @@ public class TaskRow : BoardBase
     private string _description = "";
     private DateTime _dueDate = DateTime.Today;
     private int _resourceCount;
+    private int _id;
 
+    /// <summary>Id задачі в БД; 0 — ще не збережено.</summary>
+    public int Id { get => _id; set => SetField(ref _id, value); }
     public string Title { get => _title; set => SetField(ref _title, value); }
     public string Project { get => _project; set => SetField(ref _project, value); }
     public string PriorityKey
@@ -110,9 +113,6 @@ public class TasksViewModel : PageViewModelBase
         };
         _newProject = Projects[0];
         _newPriority = Priorities[1];
-
-        foreach (var row in Rows)
-            _store.Prepare(row);
 
         View = new CollectionViewSource { Source = Rows }.View;
         View.Filter = Filter;
@@ -206,11 +206,7 @@ public class TasksViewModel : PageViewModelBase
         OnPropertyChanged(nameof(AllDone));
     }
 
-    private void AddRow(TaskRow row)
-    {
-        _store.Prepare(row);
-        _store.Add(row);
-    }
+    private void AddRow(TaskRow row) => _store.Add(row);
 
     private void OpenAdd()
     {

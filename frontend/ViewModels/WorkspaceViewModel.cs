@@ -31,11 +31,11 @@ public class WorkspaceViewModel : ViewModelBase
     public ICommand ShowSettingsCommand { get; }
     public ICommand LogoutCommand { get; }
 
-    public WorkspaceViewModel(Action onLogout)
+    public WorkspaceViewModel(TaskBoardStore taskStore, TimerViewModel timer, Action onLogout)
     {
         _onLogout = onLogout ?? throw new ArgumentNullException(nameof(onLogout));
-        _taskStore = new TaskBoardStore();
-        _timer = new TimerViewModel();
+        _taskStore = taskStore ?? throw new ArgumentNullException(nameof(taskStore));
+        _timer = timer ?? throw new ArgumentNullException(nameof(timer));
         _dashboard = new DashboardViewModel(_taskStore, _timer);
         _tasks = new TasksViewModel(_taskStore);
         _calendar = new CalendarViewModel(_taskStore);
@@ -53,6 +53,9 @@ public class WorkspaceViewModel : ViewModelBase
         LogoutCommand = new RelayCommand(_ =>
         {
             _timer.PauseCommand.Execute(null);
+            // TimerViewModel підписаний на події singleton-сервісу таймера — відписуємось,
+            // інакше після кожного виходу старий VM лишався б у пам'яті.
+            _timer.Dispose();
             _onLogout();
         });
     }

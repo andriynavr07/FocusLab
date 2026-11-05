@@ -1,11 +1,11 @@
 using System.Windows.Input;
-using Frontend.Services;
+using FocusLab.Application.Abstractions;
 
 namespace Frontend.ViewModels;
 
 public class RegisterViewModel : PageViewModelBase
 {
-    private readonly LocalAuthSession _auth;
+    private readonly IAuthService _auth;
     private string _name = string.Empty;
     private string _email = string.Empty;
     private string _password = string.Empty;
@@ -25,11 +25,11 @@ public class RegisterViewModel : PageViewModelBase
     public ICommand RegisterCommand { get; }
     public ICommand NavigateToLoginCommand { get; }
 
-    public RegisterViewModel(LocalAuthSession auth)
+    public RegisterViewModel(IAuthService auth)
     {
         _auth = auth;
         RegisterCommand = new RelayCommand(
-            _ => Register(),
+            async _ => await RegisterAsync(),
             _ => !_isBusy
                  && !string.IsNullOrWhiteSpace(Name)
                  && !string.IsNullOrWhiteSpace(Email)
@@ -37,7 +37,7 @@ public class RegisterViewModel : PageViewModelBase
         NavigateToLoginCommand = new RelayCommand(_ => LoginRequested?.Invoke());
     }
 
-    private void Register()
+    private async Task RegisterAsync()
     {
         ErrorMessage = string.Empty;
         if (Password != ConfirmPassword)
@@ -47,13 +47,24 @@ public class RegisterViewModel : PageViewModelBase
         }
 
         _isBusy = true;
+        CommandManager.InvalidateRequerySuggested();
         try
         {
-            if (_auth.TryRegister(Name, Email, Password, out var error))
+            // Валідація (довжина пароля, формат пошти) — в AuthService.
+            var result = await _auth.RegisterAsync(Name, Email, Password);
+            if (result.Success)
                 Registered?.Invoke();
             else
-                ErrorMessage = error;
+                ErrorMessage = result.Error ?? "Не вдалося зареєструватися.";
         }
-        finally { _isBusy = false; }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Помилка реєстрації: {ex.Message}";
+        }
+        finally
+        {
+            _isBusy = false;
+            CommandManager.InvalidateRequerySuggested();
+        }
     }
 }

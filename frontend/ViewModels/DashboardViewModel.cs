@@ -22,8 +22,7 @@ public class DashboardViewModel : PageViewModelBase
         {
             if (SelectedTask is { IsDone: false })
                 SelectedTask.Status = "InProgress";
-            if (!_timer.IsRunning)
-                _timer.ToggleCommand.Execute(null);
+            _timer.StartFocusFor(SelectedTask);
         });
         ToggleTaskCompleteCommand = new RelayCommand(_ =>
         {

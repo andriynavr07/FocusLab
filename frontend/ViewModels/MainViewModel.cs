@@ -1,10 +1,17 @@
+using System.Windows;
+using FocusLab.Application.Abstractions;
+using FocusLab.Application.Focus;
 using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
 public class MainViewModel : ViewModelBase
 {
-    private readonly LocalAuthSession _auth;
+    private readonly IAuthService _auth;
+    private readonly ITaskService _tasks;
+    private readonly ICurrentAccount _currentAccount;
+    private readonly IFocusTimerService _focusTimer;
+    private readonly IFocusSettingsProvider _focusSettings;
     private ViewModelBase? _current;
 
     public ViewModelBase? Current
@@ -17,14 +24,35 @@ public class MainViewModel : ViewModelBase
         }
     }
 
-    public MainViewModel(LocalAuthSession auth) => _auth = auth;
-
-    public void Start()
+    public MainViewModel(
+        IAuthService auth,
+        ITaskService tasks,
+        ICurrentAccount currentAccount,
+        IFocusTimerService focusTimer,
+        IFocusSettingsProvider focusSettings)
     {
-        if (_auth.HasAccount)
+        _auth = auth;
+        _tasks = tasks;
+        _currentAccount = currentAccount;
+        _focusTimer = focusTimer;
+        _focusSettings = focusSettings;
+    }
+
+    public async void Start()
+    {
+        try
+        {
+            if (await _auth.IsRegisteredAsync())
+                ShowLogin();
+            else
+                ShowRegister();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Не вдалося прочитати акаунт:\n{ex.Message}", "FocusLab",
+                MessageBoxButton.OK, MessageBoxImage.Error);
             ShowLogin();
-        else
-            ShowRegister();
+        }
     }
 
     private void ShowRegister()
@@ -42,5 +70,17 @@ public class MainViewModel : ViewModelBase
         Current = viewModel;
     }
 
-    private void ShowWorkspace() => Current = new WorkspaceViewModel(onLogout: ShowLogin);
+    private async void ShowWorkspace()
+    {
+        var store = new TaskBoardStore(_tasks);
+        var timer = new TimerViewModel(_focusTimer, _focusSettings);
+        Current = new WorkspaceViewModel(store, timer, onLogout: Logout);
+        await store.LoadAsync();
+    }
+
+    private void Logout()
+    {
+        _currentAccount.SignOut();
+        ShowLogin();
+    }
 }
