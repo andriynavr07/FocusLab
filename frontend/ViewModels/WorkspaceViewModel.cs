@@ -31,10 +31,10 @@ public class WorkspaceViewModel : ViewModelBase
     public ICommand ShowSettingsCommand { get; }
     public ICommand LogoutCommand { get; }
 
-    public WorkspaceViewModel(Action onLogout)
+    public WorkspaceViewModel(TaskBoardStore taskStore, Action onLogout)
     {
         _onLogout = onLogout ?? throw new ArgumentNullException(nameof(onLogout));
-        _taskStore = new TaskBoardStore();
+        _taskStore = taskStore ?? throw new ArgumentNullException(nameof(taskStore));
         _timer = new TimerViewModel();
         _dashboard = new DashboardViewModel(_taskStore, _timer);
         _tasks = new TasksViewModel(_taskStore);
