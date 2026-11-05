@@ -1,0 +1,490 @@
+<UserControl x:Class="Frontend.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FontFamily="{StaticResource MainFontFamily}"
+             FontSize="{StaticResource ControlFontSize}"
+             Background="{DynamicResource FlBg}">
+
+    <UserControl.Resources>
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource FlText}"/>
+        </Style>
+
+        <Style x:Key="DashboardButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource FlButton}">
+            <Setter Property="FontFamily"
+                    Value="{StaticResource MainFontFamily}"/>
+            <Setter Property="FontSize"
+                    Value="{StaticResource ControlFontSize}"/>
+            <Setter Property="Padding"
+                    Value="{StaticResource ControlPadding}"/>
+        </Style>
+
+        <Style x:Key="DashboardPanelStyle" TargetType="Border">
+            <Setter Property="Background"
+                    Value="{DynamicResource FlSurface}"/>
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource FlLine}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"
+                    Value="{StaticResource CornerRadius16}"/>
+            <Setter Property="Padding"
+                    Value="{StaticResource Padding20}"/>
+        </Style>
+
+        <!-- Пошук: розмітка поля, без логіки фільтрації -->
+        <Style x:Key="DashboardSearchStyle"
+               TargetType="TextBox"
+               BasedOn="{StaticResource FlSearchBox}">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="FontSize"
+                    Value="{StaticResource ControlFontSize}"/>
+        </Style>
+
+        <!-- Картка задачі -->
+        <DataTemplate x:Key="TaskCardTemplate">
+            <Border Margin="0,0,0,10"
+                    Padding="{StaticResource Padding8}"
+                    Background="{DynamicResource FlSurface2}"
+                    CornerRadius="{StaticResource CornerRadius10}"
+                    BorderThickness="1">
+
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="BorderBrush"
+                                Value="{DynamicResource FlLine}"/>
+
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsOverdue}" Value="True">
+                                <Setter Property="BorderBrush"
+                                        Value="{DynamicResource FlDanger}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+
+                <StackPanel>
+                    <TextBlock Text="{Binding Project}"
+                               FontSize="{StaticResource SmallFontSize}"
+                               Foreground="{DynamicResource FlAccent}"
+                               TextWrapping="Wrap"/>
+
+                    <TextBlock Text="{Binding Priority}"
+                               Margin="0,4,0,0"
+                               FontSize="{StaticResource SmallFontSize}"
+                               FontWeight="{StaticResource SemiBoldFontWeight}">
+
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource FlWarn}"/>
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Priority}"
+                                                 Value="ВИСОКИЙ">
+                                        <Setter Property="Foreground"
+                                                Value="{DynamicResource FlDanger}"/>
+                                    </DataTrigger>
+
+                                    <DataTrigger Binding="{Binding Priority}"
+                                                 Value="НИЗЬКИЙ">
+                                        <Setter Property="Foreground"
+                                                Value="{DynamicResource FlSuccess}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <TextBlock Text="{Binding Title}"
+                               Margin="0,8,0,0"
+                               Foreground="{DynamicResource FlText}">
+
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource TaskTitleTextStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCompleted}"
+                                                 Value="True">
+                                        <Setter Property="TextDecorations"
+                                                Value="Strikethrough"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <TextBlock Text="{Binding DueDate}"
+                               Margin="0,8,0,0"
+                               FontSize="{StaticResource SmallFontSize}">
+
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource FlMuted}"/>
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsOverdue}"
+                                                 Value="True">
+                                        <Setter Property="Foreground"
+                                                Value="{DynamicResource FlDanger}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <WrapPanel Margin="0,6,0,0">
+                        <Button Content="25 ХВ"
+                                FontSize="{StaticResource TinyFontSize}"
+                                Padding="{StaticResource BadgePadding}"
+                                Background="{DynamicResource FlAccentSoft}"
+                                Foreground="{DynamicResource FlAccent}"
+                                Style="{StaticResource DashboardButtonStyle}"/>
+
+                        <TextBlock
+                            Margin="6,0,0,0"
+                            Text="{Binding ResourceCount, StringFormat='Ресурси: {0}'}"
+                            FontSize="{StaticResource TinyFontSize}"
+                            Foreground="{DynamicResource FlMuted}"
+                            VerticalAlignment="Center"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- Колонка дошки -->
+        <DataTemplate x:Key="BoardColumnTemplate">
+            <Grid Margin="4,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="42"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="{Binding Title}"
+                               Margin="0,0,6,0"
+                               FontWeight="{StaticResource SemiBoldFontWeight}"
+                               TextWrapping="Wrap"/>
+
+                    <Border Grid.Column="1"
+                            Padding="{StaticResource CountBadgePadding}"
+                            Background="{DynamicResource FlSurface2}"
+                            CornerRadius="{StaticResource CornerRadius10}"
+                            VerticalAlignment="Top">
+
+                        <TextBlock Text="{Binding Tasks.Count}"
+                                   FontSize="{StaticResource TinyFontSize}"
+                                   Foreground="{DynamicResource FlMuted}"/>
+                    </Border>
+                </Grid>
+
+                <ItemsControl Grid.Row="1"
+                              ItemsSource="{Binding Tasks}"
+                              ItemTemplate="{StaticResource TaskCardTemplate}"/>
+            </Grid>
+        </DataTemplate>
+
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="64"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ==================== ХЕДЕР ==================== -->
+
+        <Border Grid.Row="0"
+                Padding="{StaticResource HeaderPadding}"
+                BorderBrush="{DynamicResource FlLine}"
+                BorderThickness="0,0,0,1">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
+
+                    <TextBlock Text="ДОШКА ЗАВДАНЬ"
+                               Style="{StaticResource PageTitleTextStyle}"
+                               Foreground="{DynamicResource FlText}"
+                               VerticalAlignment="Center"/>
+
+                    <TextBox x:Name="SearchInput"
+                             Width="250"
+                             Margin="16,0,0,0"
+                             Style="{StaticResource DashboardSearchStyle}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+
+                    <Button Content="Light"
+                            Margin="0,0,8,0"
+                            FontSize="{StaticResource SmallFontSize}"
+                            Padding="{StaticResource StandardPadding}"
+                            Background="{DynamicResource FlSurface2}"
+                            Style="{StaticResource DashboardButtonStyle}"/>
+
+                    <Button Content="EN"
+                            Margin="0,0,12,0"
+                            FontSize="{StaticResource SmallFontSize}"
+                            Padding="{StaticResource StandardPadding}"
+                            Background="{DynamicResource FlSurface2}"
+                            Style="{StaticResource DashboardButtonStyle}"/>
+
+                    <Button Content="+ Додати завдання"
+                            Background="{DynamicResource FlAccent}"
+                            Style="{StaticResource DashboardButtonStyle}"/>
+
+                    <Button Content="&#xE7F4;"
+                            FontFamily="Segoe MDL2 Assets"
+                            Margin="12,0,0,0"
+                            ToolTip="Сповіщення"
+                            Style="{StaticResource DashboardButtonStyle}"/>
+
+                    <Border Margin="12,0,0,0"
+                            Padding="{StaticResource CompactControlPadding}"
+                            Background="{DynamicResource FlSurface2}"
+                            CornerRadius="{StaticResource CornerRadius18}">
+
+                        <TextBlock Text="5 днів активності"
+                                   FontSize="{StaticResource SmallFontSize}"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+
+                    <Border Width="32"
+                            Height="32"
+                            Margin="12,0,0,0"
+                            Background="{DynamicResource FlSurface2}"
+                            CornerRadius="{StaticResource CornerRadius16}">
+                        <TextBlock Text="О"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ==================== ОСНОВНИЙ ВМІСТ ==================== -->
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="340"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Канбан -->
+            <Grid Grid.Column="0"
+                  Margin="{StaticResource PageMargin}">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="24"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Канбан завдань"
+                                   FontSize="{StaticResource BoardSectionFontSize}"
+                                   FontWeight="{StaticResource SemiBoldFontWeight}"
+                                   VerticalAlignment="Center"/>
+
+                        <Border Margin="8,0,0,0"
+                                Padding="{StaticResource BadgePadding}"
+                                Background="{DynamicResource FlSurface2}"
+                                CornerRadius="{StaticResource CornerRadius10}"
+                                VerticalAlignment="Center">
+
+                            <TextBlock
+                                Text="{Binding TotalTaskCount, StringFormat='{}{0} завдань'}"
+                                FontSize="{StaticResource TinyFontSize}"
+                                Foreground="{DynamicResource FlMuted}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <Border Grid.Column="1"
+                            Margin="16,0,0,0"
+                            Padding="{StaticResource CompactControlPadding}"
+                            Background="{DynamicResource FlSurface2}"
+                            CornerRadius="{StaticResource CornerRadius8}"
+                            HorizontalAlignment="Right">
+
+                        <TextBlock Text="Теги: ВИСОКИЙ · ПЛАН · ДОКУМЕНТАЦІЯ"
+                                   FontSize="{StaticResource SmallFontSize}"
+                                   Foreground="{DynamicResource FlMuted}"/>
+                    </Border>
+                </Grid>
+
+                <ScrollViewer Grid.Row="2"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+
+                    <ItemsControl ItemsSource="{Binding Columns}"
+                                  ItemTemplate="{StaticResource BoardColumnTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="5"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Права панель -->
+            <Border Grid.Column="1"
+                    Padding="{StaticResource RightPanelPadding}"
+                    BorderBrush="{DynamicResource FlLine}"
+                    BorderThickness="1,0,0,0">
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+
+                        <!-- Таймер -->
+                        <Border Style="{StaticResource DashboardPanelStyle}">
+                            <StackPanel>
+                                <Grid>
+                                    <TextBlock Text="ЧАС"
+                                               FontSize="{StaticResource SmallFontSize}"
+                                               FontWeight="{StaticResource SemiBoldFontWeight}"/>
+
+                                    <TextBlock Text="СФОКУСУВАННЯ"
+                                               HorizontalAlignment="Right"
+                                               FontSize="{StaticResource TinyFontSize}"
+                                               Foreground="{DynamicResource FlAccent}"/>
+                                </Grid>
+
+                                <Grid Height="180" Margin="0,12,0,12">
+                                    <Ellipse Width="160"
+                                             Height="160"
+                                             Stroke="{DynamicResource FlLine}"
+                                             StrokeThickness="8"/>
+
+                                    <Ellipse Width="160"
+                                             Height="160"
+                                             Stroke="{DynamicResource FlAccent}"
+                                             StrokeThickness="5"/>
+
+                                    <TextBlock Text="25:00"
+                                               Style="{StaticResource LargeTimerTextStyle}"
+                                               Foreground="{DynamicResource FlText}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Center">
+
+                                    <Button Content="↻"
+                                            Margin="0,0,8,0"
+                                            ToolTip="Скинути"
+                                            Style="{StaticResource DashboardButtonStyle}"/>
+
+                                    <Button Content="▶ ПОЧАТИ"
+                                            Background="{DynamicResource FlAccent}"
+                                            Style="{StaticResource DashboardButtonStyle}"/>
+
+                                    <Button Content="■"
+                                            Margin="8,0,0,0"
+                                            ToolTip="Зупинити"
+                                            Style="{StaticResource DashboardButtonStyle}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Статус -->
+                        <TextBlock Text="СТАТУС"
+                                   Margin="0,28,0,12"
+                                   FontSize="{StaticResource SmallFontSize}"
+                                   Foreground="{DynamicResource FlMuted}"/>
+
+                        <ItemsControl ItemsSource="{Binding Statistics}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,10"
+                                            Padding="{StaticResource Padding12}"
+                                            Background="{DynamicResource FlSurface2}"
+                                            CornerRadius="{StaticResource CornerRadius8}">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Right"
+                                                       Text="{Binding Value}"
+                                                       FontWeight="{StaticResource SemiBoldFontWeight}"/>
+
+                                            <TextBlock Text="{Binding Label}"
+                                                       Foreground="{DynamicResource FlMuted}"/>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Розклад -->
+                        <Grid Margin="0,18,0,12">
+                            <TextBlock Text="РОЗКЛАД НА ДЕНЬ"
+                                       FontSize="{StaticResource SmallFontSize}"
+                                       Foreground="{DynamicResource FlMuted}"/>
+
+                            <TextBlock Text="22 ВЕР"
+                                       HorizontalAlignment="Right"
+                                       FontSize="{StaticResource SmallFontSize}"
+                                       Foreground="{DynamicResource FlAccent}"/>
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding Schedule}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="{Binding Time}"
+                                                   FontSize="{StaticResource SmallFontSize}"
+                                                   Foreground="{DynamicResource FlMuted}"
+                                                   VerticalAlignment="Center"/>
+
+                                        <Border Grid.Column="1"
+                                                Padding="{StaticResource Padding8}"
+                                                Background="{DynamicResource FlSurface2}"
+                                                CornerRadius="{StaticResource CornerRadius8}">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}"
+                                                           TextWrapping="Wrap"/>
+
+                                                <TextBlock Text="{Binding Duration}"
+                                                           Margin="0,3,0,0"
+                                                           FontSize="{StaticResource SmallFontSize}"
+                                                           Foreground="{DynamicResource FlMuted}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

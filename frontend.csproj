@@ -8,13 +8,4 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="SharpVectors.Wpf" Version="1.8.6" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.*" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Backend\src\Application\FocusLab.Application.csproj" />
-    <ProjectReference Include="..\Backend\src\Infrastructure\FocusLab.Infrastructure.csproj" />
-  </ItemGroup>
-
 </Project>

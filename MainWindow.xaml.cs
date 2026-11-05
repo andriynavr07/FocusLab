@@ -1,7 +1,7 @@
-﻿using System.Windows;
-using frontend.ViewModels;
+using System.Windows;
+using Frontend.ViewModels;
 
-namespace frontend;
+namespace Frontend;
 
 public partial class MainWindow : Window
 {
@@ -9,6 +9,6 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = vm;
-        Loaded += async (_, _) => await vm.StartAsync();
+        Loaded += (_, _) => vm.Start();
     }
 }

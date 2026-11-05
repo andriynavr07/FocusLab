@@ -1,11 +1,11 @@
-﻿using System.Windows.Input;
-using FocusLab.Application.Abstractions;
+using System.Windows.Input;
+using Frontend.Services;
 
-namespace frontend.ViewModels;
+namespace Frontend.ViewModels;
 
 public class RegisterViewModel : ViewModelBase
 {
-    private readonly IAuthService _auth;
+    private readonly LocalAuthSession _auth;
     private string _name = string.Empty;
     private string _email = string.Empty;
     private string _password = string.Empty;
@@ -25,11 +25,11 @@ public class RegisterViewModel : ViewModelBase
     public ICommand RegisterCommand { get; }
     public ICommand NavigateToLoginCommand { get; }
 
-    public RegisterViewModel(IAuthService auth)
+    public RegisterViewModel(LocalAuthSession auth)
     {
         _auth = auth;
         RegisterCommand = new RelayCommand(
-            async _ => await RegisterAsync(),
+            _ => Register(),
             _ => !_isBusy
                  && !string.IsNullOrWhiteSpace(Name)
                  && !string.IsNullOrWhiteSpace(Email)
@@ -37,7 +37,7 @@ public class RegisterViewModel : ViewModelBase
         NavigateToLoginCommand = new RelayCommand(_ => LoginRequested?.Invoke());
     }
 
-    private async Task RegisterAsync()
+    private void Register()
     {
         ErrorMessage = string.Empty;
         if (Password != ConfirmPassword)
@@ -49,17 +49,11 @@ public class RegisterViewModel : ViewModelBase
         _isBusy = true;
         try
         {
-            var result = await _auth.RegisterAsync(Name, Email, Password);
-            if (result.Success) Registered?.Invoke();
-            else ErrorMessage = result.Error ?? "Не вдалося зареєструватися.";
+            if (_auth.TryRegister(Name, Email, Password, out var error))
+                Registered?.Invoke();
+            else
+                ErrorMessage = error;
         }
-        catch (Exception ex)
-        {
-            ErrorMessage = "Помилка: " + ex.Message;
-        }
-        finally
-        {
-            _isBusy = false;
-        }
+        finally { _isBusy = false; }
     }
 }
