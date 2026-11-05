@@ -35,7 +35,7 @@
                     Value="{StaticResource Padding20}"/>
         </Style>
 
-        <!-- Пошук: розмітка поля, без логіки фільтрації -->
+        <!-- Пошук спільного списку задач -->
         <Style x:Key="DashboardSearchStyle"
                TargetType="TextBox"
                BasedOn="{StaticResource FlSearchBox}">
@@ -50,7 +50,11 @@
                     Padding="{StaticResource Padding8}"
                     Background="{DynamicResource FlSurface2}"
                     CornerRadius="{StaticResource CornerRadius10}"
-                    BorderThickness="1">
+                    BorderThickness="1"
+                    Cursor="Hand">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding OpenCommand}"/>
+                </Border.InputBindings>
 
                 <Border.Style>
                     <Style TargetType="Border">
@@ -138,12 +142,11 @@
                     </TextBlock>
 
                     <WrapPanel Margin="0,6,0,0">
-                        <Button Content="25 ХВ"
-                                FontSize="{StaticResource TinyFontSize}"
-                                Padding="{StaticResource BadgePadding}"
-                                Background="{DynamicResource FlAccentSoft}"
-                                Foreground="{DynamicResource FlAccent}"
-                                Style="{StaticResource DashboardButtonStyle}"/>
+                        <TextBlock Text="25 ХВ ФОКУСУ"
+                                   FontSize="{StaticResource TinyFontSize}"
+                                   Padding="{StaticResource BadgePadding}"
+                                   Background="{DynamicResource FlAccentSoft}"
+                                   Foreground="{DynamicResource FlAccent}"/>
 
                         <TextBlock
                             Margin="6,0,0,0"
@@ -225,36 +228,51 @@
                     <TextBox x:Name="SearchInput"
                              Width="250"
                              Margin="16,0,0,0"
-                             Style="{StaticResource DashboardSearchStyle}"/>
+                             Style="{StaticResource DashboardSearchStyle}"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
                             VerticalAlignment="Center">
 
-                    <Button Content="Light"
+                    <Button Content="{Binding ThemeButtonText}"
                             Margin="0,0,8,0"
                             FontSize="{StaticResource SmallFontSize}"
                             Padding="{StaticResource StandardPadding}"
                             Background="{DynamicResource FlSurface2}"
-                            Style="{StaticResource DashboardButtonStyle}"/>
+                            Style="{StaticResource DashboardButtonStyle}"
+                            Command="{Binding ToggleThemeCommand}"/>
 
-                    <Button Content="EN"
+                    <Button Content="{Binding LanguageButtonText}"
                             Margin="0,0,12,0"
                             FontSize="{StaticResource SmallFontSize}"
                             Padding="{StaticResource StandardPadding}"
                             Background="{DynamicResource FlSurface2}"
-                            Style="{StaticResource DashboardButtonStyle}"/>
+                            Style="{StaticResource DashboardButtonStyle}"
+                            Command="{Binding ToggleLanguageCommand}"/>
 
                     <Button Content="+ Додати завдання"
                             Background="{DynamicResource FlAccent}"
-                            Style="{StaticResource DashboardButtonStyle}"/>
+                            Style="{StaticResource DashboardButtonStyle}"
+                            Command="{Binding OpenNewTaskCommand}"/>
 
-                    <Button Content="&#xE7F4;"
-                            FontFamily="Segoe MDL2 Assets"
-                            Margin="12,0,0,0"
-                            ToolTip="Сповіщення"
-                            Style="{StaticResource DashboardButtonStyle}"/>
+                    <Grid Margin="12,0,0,0">
+                        <Button x:Name="NotificationsButton" Content="&#xE7F4;"
+                                FontFamily="Segoe MDL2 Assets"
+                                ToolTip="Сповіщення"
+                                Style="{StaticResource DashboardButtonStyle}"
+                                Command="{Binding OpenNotificationsCommand}"/>
+                        <Popup IsOpen="{Binding IsNotificationsOpen, Mode=TwoWay}" StaysOpen="False"
+                               Placement="Bottom" PlacementTarget="{Binding ElementName=NotificationsButton}"
+                               AllowsTransparency="True">
+                            <Border Margin="0,6,0,0" Padding="18,14" CornerRadius="12" MinWidth="220"
+                                    Background="{DynamicResource FlSurface}" BorderBrush="{DynamicResource FlLine}"
+                                    BorderThickness="1">
+                                <TextBlock Text="Немає нових сповіщень" Foreground="{DynamicResource FlMuted}"/>
+                            </Border>
+                        </Popup>
+                    </Grid>
 
                     <Border Margin="12,0,0,0"
                             Padding="{StaticResource CompactControlPadding}"
@@ -384,7 +402,7 @@
                                              Stroke="{DynamicResource FlAccent}"
                                              StrokeThickness="5"/>
 
-                                    <TextBlock Text="25:00"
+                                    <TextBlock Text="{Binding Timer.TimeText}"
                                                Style="{StaticResource LargeTimerTextStyle}"
                                                Foreground="{DynamicResource FlText}"
                                                HorizontalAlignment="Center"
@@ -397,16 +415,19 @@
                                     <Button Content="↻"
                                             Margin="0,0,8,0"
                                             ToolTip="Скинути"
-                                            Style="{StaticResource DashboardButtonStyle}"/>
+                                            Style="{StaticResource DashboardButtonStyle}"
+                                            Command="{Binding ResetTimerCommand}"/>
 
-                                    <Button Content="▶ ПОЧАТИ"
+                                    <Button Content="{Binding Timer.StartPauseText}"
                                             Background="{DynamicResource FlAccent}"
-                                            Style="{StaticResource DashboardButtonStyle}"/>
+                                            Style="{StaticResource DashboardButtonStyle}"
+                                            Command="{Binding ToggleTimerCommand}"/>
 
                                     <Button Content="■"
                                             Margin="8,0,0,0"
                                             ToolTip="Зупинити"
-                                            Style="{StaticResource DashboardButtonStyle}"/>
+                                            Style="{StaticResource DashboardButtonStyle}"
+                                            Command="{Binding PauseTimerCommand}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -484,6 +505,49 @@
 
                     </StackPanel>
                 </ScrollViewer>
+            </Border>
+        </Grid>
+        <Grid Visibility="{Binding IsDetailsOpen, Converter={StaticResource FlBoolToVis}}">
+            <Border Background="{DynamicResource FlOverlay}">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding CloseDetailsCommand}"/>
+                </Border.InputBindings>
+            </Border>
+            <Border Width="500" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="{DynamicResource FlSurface}" BorderBrush="{DynamicResource FlLine}"
+                    BorderThickness="1" CornerRadius="18" Padding="28">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="Деталі завдання" FontSize="22" FontWeight="Bold"/>
+                        <Button HorizontalAlignment="Right" Style="{StaticResource FlIconButton}" Content="&#xE711;"
+                                Command="{Binding CloseDetailsCommand}"/>
+                    </Grid>
+                    <TextBlock Text="{Binding SelectedTask.Title}" FontSize="20" FontWeight="SemiBold"
+                               TextWrapping="Wrap" Margin="0,20,0,10"/>
+                    <TextBlock Text="{Binding SelectedTask.Description, TargetNullValue=Опис не додано}"
+                               Foreground="{DynamicResource FlMuted}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <TextBlock Text="{Binding SelectedTask.Project, StringFormat='Проєкт: {0}'}"/>
+                    <TextBlock Text="{Binding SelectedTask.PriorityLabel, StringFormat='Пріоритет: {0}'}" Margin="0,6,0,0"/>
+                    <TextBlock Text="{Binding SelectedTask.DueText, StringFormat='Термін: {0}'}" Margin="0,6,0,0"/>
+                    <TextBlock Text="Статус" Foreground="{DynamicResource FlMuted}" Margin="0,16,0,6"/>
+                    <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding TaskStatuses}"
+                              SelectedItem="{Binding SelectedTask.Status, Mode=TwoWay}"/>
+                    <Grid Margin="0,24,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Style="{StaticResource FlButton}" Content="Видалити" Padding="16,10"
+                                Command="{Binding DeleteTaskCommand}"/>
+                        <Button Grid.Column="2" Style="{StaticResource FlButton}" Content="Перемкнути виконання"
+                                Padding="16,10" Command="{Binding ToggleTaskCompleteCommand}"/>
+                        <Button Grid.Column="4" Style="{StaticResource FlPrimaryButton}" Content="Фокус 25 хв"
+                                Padding="16,10" Command="{Binding StartTaskFocusCommand}"/>
+                    </Grid>
+                </StackPanel>
             </Border>
         </Grid>
     </Grid>

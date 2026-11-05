@@ -14,7 +14,7 @@
             <Border BorderBrush="{DynamicResource FlLine}" BorderThickness="0,0,0,1" Padding="16,0" Height="56"
                     Background="Transparent">
                 <Border.ContextMenu>
-                    <ContextMenu>
+                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                         <MenuItem Header="Видалити" Command="{Binding DeleteCommand}"/>
                     </ContextMenu>
                 </Border.ContextMenu>
@@ -189,6 +189,12 @@
                     <TextBox Style="{StaticResource FlTextBox}" Tag="Введіть назву завдання..." MaxLength="255"
                              Text="{Binding NewTitle, UpdateSourceTrigger=PropertyChanged}"/>
 
+                    <TextBlock Text="Опис" FontWeight="SemiBold" FontSize="13"
+                               Foreground="{DynamicResource FlMuted}" Margin="0,16,0,8"/>
+                    <TextBox Style="{StaticResource FlTextBox}" Tag="Деталі завдання..."
+                             Text="{Binding NewDescription, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="Wrap" Height="76" VerticalContentAlignment="Top"/>
+
                     <TextBlock Text="Проєкт" FontWeight="SemiBold" FontSize="13"
                                Foreground="{DynamicResource FlMuted}" Margin="0,16,0,8"/>
                     <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding Projects}"
@@ -198,6 +204,10 @@
                                Foreground="{DynamicResource FlMuted}" Margin="0,16,0,8"/>
                     <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding Priorities}"
                               SelectedItem="{Binding NewPriority, Mode=TwoWay}" DisplayMemberPath="Label"/>
+
+                    <TextBlock Text="Термін виконання" FontWeight="SemiBold" FontSize="13"
+                               Foreground="{DynamicResource FlMuted}" Margin="0,16,0,8"/>
+                    <DatePicker SelectedDate="{Binding NewDueDate, Mode=TwoWay}" MinHeight="38"/>
 
                     <Grid Margin="0,26,0,0">
                         <Grid.ColumnDefinitions>

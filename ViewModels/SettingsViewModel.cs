@@ -41,9 +41,11 @@ public class SettingsViewModel : PageViewModelBase
     private bool _notifyTasks = true, _notifyBreaks = true, _dailyReport, _sounds = true;
     private int _workDefault = 25, _breakDefault = 5, _sessionsDefault = 4;
     private string _language = "Українська";
+    private readonly TimerViewModel _timer;
 
-    public SettingsViewModel()
+    public SettingsViewModel(TimerViewModel timer)
     {
+        _timer = timer;
         Accents = new ObservableCollection<AccentOption>
         {
             new("Синій", "#3B6EF5") { IsSelected = true },
@@ -67,13 +69,28 @@ public class SettingsViewModel : PageViewModelBase
         ConfirmDeleteCommand = new RelayCommand(_ =>
         {
             IsDeleteOpen = false;
-            // TODO: виклик API видалення акаунта
-            MessageBox.Show("Запит на видалення акаунта надіслано.");
+            MessageBox.Show(
+                "Видалення акаунта недоступне: цей застосунок зараз використовує локальний демонстраційний профіль.",
+                "Видалення акаунта",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         });
 
-        CycleWorkCommand = new RelayCommand(_ => { WorkDefault = Next(WorkSteps, WorkDefault); });
-        CycleBreakCommand = new RelayCommand(_ => { BreakDefault = Next(BreakSteps, BreakDefault); });
-        CycleSessionsCommand = new RelayCommand(_ => { SessionsDefault = Next(SessionSteps, SessionsDefault); });
+        CycleWorkCommand = new RelayCommand(_ =>
+        {
+            WorkDefault = Next(WorkSteps, WorkDefault);
+            _timer.WorkMinutes = WorkDefault;
+        });
+        CycleBreakCommand = new RelayCommand(_ =>
+        {
+            BreakDefault = Next(BreakSteps, BreakDefault);
+            _timer.ShortBreakMinutes = BreakDefault;
+        });
+        CycleSessionsCommand = new RelayCommand(_ =>
+        {
+            SessionsDefault = Next(SessionSteps, SessionsDefault);
+            _timer.SessionsPerRound = SessionsDefault;
+        });
 
         ExportCommand = new RelayCommand(_ => Export());
         OpenSupportCommand = new RelayCommand(_ =>
