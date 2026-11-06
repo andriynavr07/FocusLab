@@ -13,6 +13,8 @@ public class LoginViewModel : PageViewModelBase
     private string _errorMessage = string.Empty;
     private bool _isBusy;
     private bool _rememberMe;
+    private bool _isEmailInvalid;
+    private bool _isPasswordInvalid;
 
     public event Action? RegisterRequested;
 
@@ -23,6 +25,8 @@ public class LoginViewModel : PageViewModelBase
         {
             _email = value;
             OnPropertyChanged();
+            IsEmailInvalid = false;
+            ClearError();
             CommandManager.InvalidateRequerySuggested();
         }
     }
@@ -34,6 +38,8 @@ public class LoginViewModel : PageViewModelBase
         {
             _password = value;
             OnPropertyChanged();
+            IsPasswordInvalid = false;
+            ClearError();
             CommandManager.InvalidateRequerySuggested();
         }
     }
@@ -49,6 +55,9 @@ public class LoginViewModel : PageViewModelBase
         get => _rememberMe;
         set { _rememberMe = value; OnPropertyChanged(); }
     }
+
+    public bool IsEmailInvalid { get => _isEmailInvalid; private set { _isEmailInvalid = value; OnPropertyChanged(); } }
+    public bool IsPasswordInvalid { get => _isPasswordInvalid; private set { _isPasswordInvalid = value; OnPropertyChanged(); } }
 
     public ICommand LoginCommand { get; }
     public ICommand NavigateToRegisterCommand { get; }
@@ -75,6 +84,8 @@ public class LoginViewModel : PageViewModelBase
     private void Login()
     {
         ErrorMessage = string.Empty;
+        IsEmailInvalid = false;
+        IsPasswordInvalid = false;
         _isBusy = true;
         CommandManager.InvalidateRequerySuggested();
 
@@ -83,12 +94,22 @@ public class LoginViewModel : PageViewModelBase
             if (_auth.TryLogin(Email, Password))
                 _onLoginSuccess();
             else
+            {
                 ErrorMessage = "Невірна пошта або пароль. Зареєструйтеся в цьому запуску застосунку.";
+                IsEmailInvalid = true;
+                IsPasswordInvalid = true;
+            }
         }
         finally
         {
             _isBusy = false;
             CommandManager.InvalidateRequerySuggested();
         }
+    }
+
+    private void ClearError()
+    {
+        if (string.IsNullOrEmpty(ErrorMessage)) return;
+        ErrorMessage = string.Empty;
     }
 }

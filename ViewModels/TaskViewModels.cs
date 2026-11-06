@@ -92,6 +92,7 @@ public class TasksViewModel : PageViewModelBase
     private string _selSort = "Датою виконання";
     private bool _isAddOpen;
     private string _newTitle = "";
+    private bool _newTitleTouched;
     private string _newDescription = "";
     private DateTime _newDueDate = DateTime.Today;
     private string _newProject;
@@ -152,12 +153,23 @@ public class TasksViewModel : PageViewModelBase
     public bool IsEmpty => View.IsEmpty;
 
     public bool IsAddOpen { get => _isAddOpen; set => SetField(ref _isAddOpen, value); }
-    public string NewTitle { get => _newTitle; set { if (SetField(ref _newTitle, value)) OnPropertyChanged(nameof(CanCreate)); } }
+    public string NewTitle
+    {
+        get => _newTitle;
+        set
+        {
+            if (!SetField(ref _newTitle, value)) return;
+            _newTitleTouched = true;
+            OnPropertyChanged(nameof(CanCreate));
+            OnPropertyChanged(nameof(IsNewTitleInvalid));
+        }
+    }
     public string NewDescription { get => _newDescription; set => SetField(ref _newDescription, value); }
     public DateTime NewDueDate { get => _newDueDate; set => SetField(ref _newDueDate, value); }
     public string NewProject { get => _newProject; set => SetField(ref _newProject, value); }
     public PriorityOption NewPriority { get => _newPriority; set { if (value != null) SetField(ref _newPriority, value); } }
     public bool CanCreate => NewTitle.Trim().Length is >= 1 and <= 255;
+    public bool IsNewTitleInvalid => _newTitleTouched && !CanCreate;
 
     public ICommand CloseAddCommand { get; }
     public ICommand CreateTaskCommand { get; }
@@ -215,6 +227,8 @@ public class TasksViewModel : PageViewModelBase
     private void OpenAdd()
     {
         NewTitle = "";
+        _newTitleTouched = false;
+        OnPropertyChanged(nameof(IsNewTitleInvalid));
         NewDescription = "";
         NewDueDate = DateTime.Today;
         NewProject = Projects[0];

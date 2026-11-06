@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:Frontend.ViewModels"
              xmlns:local="clr-namespace:Frontend.Views"
+             xmlns:controls="clr-namespace:Frontend.Controls"
              x:Name="Root">
 
     <UserControl.InputBindings>
@@ -187,6 +188,7 @@
                     <TextBlock Text="Назва * (1–255)" FontWeight="SemiBold" FontSize="13"
                                Foreground="{DynamicResource FlMuted}" Margin="0,20,0,8"/>
                     <TextBox Style="{StaticResource FlTextBox}" Tag="Введіть назву завдання..." MaxLength="255"
+                             controls:ControlState.IsInvalid="{Binding IsNewTitleInvalid}"
                              Text="{Binding NewTitle, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <TextBlock Text="Опис" FontWeight="SemiBold" FontSize="13"
@@ -207,7 +209,8 @@
 
                     <TextBlock Text="Термін виконання" FontWeight="SemiBold" FontSize="13"
                                Foreground="{DynamicResource FlMuted}" Margin="0,16,0,8"/>
-                    <DatePicker SelectedDate="{Binding NewDueDate, Mode=TwoWay}" MinHeight="38"/>
+                    <DatePicker Style="{StaticResource FlDatePicker}" SelectedDate="{Binding NewDueDate, Mode=TwoWay}"
+                                MinHeight="38"/>
 
                     <Grid Margin="0,26,0,0">
                         <Grid.ColumnDefinitions>

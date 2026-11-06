@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:Frontend.ViewModels"
+             xmlns:controls="clr-namespace:Frontend.Controls"
              mc:Ignorable="d"
              d:DesignHeight="900"
              d:DesignWidth="1440"
@@ -187,6 +188,7 @@
                                             Mode=TwoWay,
                                             UpdateSourceTrigger=PropertyChanged}"
                              Tag="Ваше імʼя"
+                             controls:ControlState.IsInvalid="{Binding IsNameInvalid}"
                              Margin="0,0,0,16"
                              AutomationProperties.Name="Імʼя"
                              Style="{StaticResource RegisterInputStyle}"/>
@@ -200,6 +202,7 @@
                                             Mode=TwoWay,
                                             UpdateSourceTrigger=PropertyChanged}"
                              Tag="you@example.com"
+                             controls:ControlState.IsInvalid="{Binding IsEmailInvalid}"
                              Margin="0,0,0,16"
                              AutomationProperties.Name="Електронна пошта"
                              Style="{StaticResource RegisterInputStyle}"/>
@@ -209,6 +212,7 @@
                                Style="{StaticResource RegisterFieldLabelStyle}"/>
 
                     <PasswordBox x:Name="PasswordInput"
+                                 controls:ControlState.IsInvalid="{Binding IsPasswordInvalid}"
                                  Margin="0,0,0,16"
                                  ToolTip="Введіть пароль"
                                  AutomationProperties.Name="Пароль"
@@ -219,6 +223,7 @@
                                Style="{StaticResource RegisterFieldLabelStyle}"/>
 
                     <PasswordBox x:Name="ConfirmPasswordInput"
+                                 controls:ControlState.IsInvalid="{Binding IsConfirmPasswordInvalid}"
                                  Margin="0,0,0,16"
                                  ToolTip="Повторіть пароль"
                                  AutomationProperties.Name="Підтвердження пароля"

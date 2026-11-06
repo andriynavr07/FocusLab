@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:Frontend.ViewModels"
              xmlns:local="clr-namespace:Frontend.Views"
+             xmlns:controls="clr-namespace:Frontend.Controls"
              x:Name="Root">
 
     <UserControl.InputBindings>
@@ -259,10 +260,12 @@
                     <TextBlock Text="Ім’я" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource FlMuted}"
                                Margin="0,20,0,8"/>
                     <TextBox Style="{StaticResource FlTextBox}" Tag="Ваше ім’я"
+                             controls:ControlState.IsInvalid="{Binding IsEditNameInvalid}"
                              Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"/>
                     <TextBlock Text="Email" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource FlMuted}"
                                Margin="0,16,0,8"/>
                     <TextBox Style="{StaticResource FlTextBox}" Tag="name@example.com"
+                             controls:ControlState.IsInvalid="{Binding IsEditEmailInvalid}"
                              Text="{Binding EditEmail, UpdateSourceTrigger=PropertyChanged}"/>
                     <Grid Margin="0,26,0,0">
                         <Grid.ColumnDefinitions>

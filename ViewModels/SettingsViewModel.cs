@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Net.Mail;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -180,9 +181,29 @@ public class SettingsViewModel : PageViewModelBase
     // ----- модалки -----
     public bool IsEditOpen { get => _isEditOpen; set => SetField(ref _isEditOpen, value); }
     public bool IsDeleteOpen { get => _isDeleteOpen; set => SetField(ref _isDeleteOpen, value); }
-    public string EditName { get => _editName; set { if (SetField(ref _editName, value)) OnPropertyChanged(nameof(CanSaveProfile)); } }
-    public string EditEmail { get => _editEmail; set { if (SetField(ref _editEmail, value)) OnPropertyChanged(nameof(CanSaveProfile)); } }
-    public bool CanSaveProfile => EditName.Trim().Length > 0 && EditEmail.Contains('@');
+    public string EditName
+    {
+        get => _editName;
+        set
+        {
+            if (!SetField(ref _editName, value)) return;
+            OnPropertyChanged(nameof(CanSaveProfile));
+            OnPropertyChanged(nameof(IsEditNameInvalid));
+        }
+    }
+    public string EditEmail
+    {
+        get => _editEmail;
+        set
+        {
+            if (!SetField(ref _editEmail, value)) return;
+            OnPropertyChanged(nameof(CanSaveProfile));
+            OnPropertyChanged(nameof(IsEditEmailInvalid));
+        }
+    }
+    public bool IsEditNameInvalid => string.IsNullOrWhiteSpace(EditName);
+    public bool IsEditEmailInvalid => !IsValidEmail(EditEmail);
+    public bool CanSaveProfile => !IsEditNameInvalid && !IsEditEmailInvalid;
 
     public ICommand SelectAccentCommand { get; }
     public ICommand OpenEditCommand { get; }
@@ -222,4 +243,8 @@ public class SettingsViewModel : PageViewModelBase
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         }));
     }
+
+    private static bool IsValidEmail(string email) =>
+        MailAddress.TryCreate(email.Trim(), out var address)
+        && string.Equals(address.Address, email.Trim(), StringComparison.OrdinalIgnoreCase);
 }
