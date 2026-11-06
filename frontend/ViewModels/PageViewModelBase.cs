@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Input;
 using Frontend.Services;
 
@@ -16,6 +17,8 @@ public abstract class PageViewModelBase : BoardBase
 
     protected PageViewModelBase()
     {
+        // Ім'я, пошта та серійний період змінюються з різних місць — оновлюємо верхню панель.
+        WeakEventManager<UserSession, EventArgs>.AddHandler(UserSession.Instance, nameof(UserSession.Changed), OnSessionChanged);
         ToggleThemeCommand = new RelayCommand(_ => SetTheme(!_isLight));
         ToggleLanguageCommand = new RelayCommand(_ => { _isUa = !_isUa; OnPropertyChanged(nameof(LanguageButtonText)); });
         OpenNotificationsCommand = new RelayCommand(_ => IsNotificationsOpen = true);
@@ -37,8 +40,17 @@ public abstract class PageViewModelBase : BoardBase
 
     public string ThemeButtonText => _isLight ? "Dark" : "Light";
     public string LanguageButtonText => _isUa ? "EN" : "UA";
-    public string StreakText => "5 днів активності";
-    public string AvatarInitials => "ОК";
+    public string StreakText => UserSession.Instance.StreakText;
+    public string AvatarInitials => UserSession.Instance.Initials;
+
+    private void OnSessionChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(StreakText));
+        OnPropertyChanged(nameof(AvatarInitials));
+        OnUserSessionChanged();
+    }
+
+    protected virtual void OnUserSessionChanged() { }
 
     public string SearchText
     {

@@ -191,6 +191,7 @@
                         </ToggleButton>
                         <ContentPresenter IsHitTestVisible="False" Margin="14,0,38,0" VerticalAlignment="Center"
                                           Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                           TextElement.Foreground="{TemplateBinding Foreground}"/>
                         <TextBlock Text="&#xE70D;" FontFamily="{StaticResource FlIcons}" FontSize="11"
@@ -265,7 +266,7 @@
         </Style.Triggers>
     </Style>
 
-    <!-- Вибір пріоритету -->
+    <!-- Вибір пріоритету (чіпи з макета «Нове завдання»: вибраний — з червоною обвідкою) -->
     <Style x:Key="FlPriorityItem" TargetType="ListBoxItem">
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Margin" Value="0,0,8,0"/>
@@ -273,30 +274,22 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
                     <Border x:Name="Bd" Background="{DynamicResource FlSurface2}" BorderBrush="{DynamicResource FlLine}"
-                            BorderThickness="1" CornerRadius="10" Padding="8,10">
+                            BorderThickness="1" CornerRadius="8" Padding="6,10">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Ellipse x:Name="Dot" Width="7" Height="7" Margin="0,0,7,0" Fill="{DynamicResource FlMuted}"/>
+                            <Ellipse x:Name="Dot" Width="6" Height="6" Margin="0,0,7,0" Fill="{DynamicResource FlMuted}"/>
                             <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="SemiBold"
                                        Foreground="{DynamicResource FlMuted}" x:Name="Tx"/>
                         </StackPanel>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <DataTrigger Binding="{Binding Key}" Value="Low">
-                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource FlSuccess}"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding Key}" Value="Medium">
-                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource FlWarn}"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding Key}" Value="High">
-                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource FlDanger}"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding Key}" Value="Critical">
-                            <Setter TargetName="Dot" Property="Fill" Value="#C026D3"/>
-                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource FlMuted}"/>
+                        </Trigger>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource FlAccent}"/>
-                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource FlAccentSoft}"/>
-                            <Setter TargetName="Tx" Property="Foreground" Value="{DynamicResource FlText}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource FlDanger}"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource FlDangerSoft}"/>
+                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource FlDanger}"/>
+                            <Setter TargetName="Tx" Property="Foreground" Value="{DynamicResource FlDanger}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

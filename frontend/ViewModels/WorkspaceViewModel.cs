@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using FocusLab.Application.Abstractions;
 using Frontend.Services;
 
 namespace Frontend.ViewModels;
@@ -31,15 +32,20 @@ public class WorkspaceViewModel : ViewModelBase
     public ICommand ShowSettingsCommand { get; }
     public ICommand LogoutCommand { get; }
 
-    public WorkspaceViewModel(TaskBoardStore taskStore, TimerViewModel timer, Action onLogout)
+    public WorkspaceViewModel(
+        TaskBoardStore taskStore,
+        TimerViewModel timer,
+        IActivityService activity,
+        IAuthService auth,
+        Action onLogout)
     {
         _onLogout = onLogout ?? throw new ArgumentNullException(nameof(onLogout));
         _taskStore = taskStore ?? throw new ArgumentNullException(nameof(taskStore));
         _timer = timer ?? throw new ArgumentNullException(nameof(timer));
-        _dashboard = new DashboardViewModel(_taskStore, _timer);
+        _dashboard = new DashboardViewModel(_taskStore, _timer, activity ?? throw new ArgumentNullException(nameof(activity)));
         _tasks = new TasksViewModel(_taskStore);
         _calendar = new CalendarViewModel(_taskStore);
-        _settings = new SettingsViewModel(_timer);
+        _settings = new SettingsViewModel(_timer, auth ?? throw new ArgumentNullException(nameof(auth)));
         _currentPage = _dashboard;
 
         foreach (var page in new PageViewModelBase[] { _dashboard, _tasks, _calendar, _timer, _settings })
@@ -56,6 +62,7 @@ public class WorkspaceViewModel : ViewModelBase
             // TimerViewModel підписаний на події singleton-сервісу таймера — відписуємось,
             // інакше після кожного виходу старий VM лишався б у пам'яті.
             _timer.Dispose();
+            _dashboard.Dispose();
             _onLogout();
         });
     }

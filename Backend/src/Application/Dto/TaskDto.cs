@@ -12,6 +12,7 @@ public class TaskDto
     public string? Description { get; set; }
     public string? Project { get; set; }
     public DateTime? Deadline { get; set; }
+    public int? EstimatedMinutes { get; set; }
     public Priority Priority { get; set; } = Priority.Medium;
     public TaskStatus Status { get; set; } = TaskStatus.Todo;
     public DateTime CreatedAt { get; set; }

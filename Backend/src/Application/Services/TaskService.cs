@@ -36,6 +36,7 @@ public class TaskService : ITaskService
             Description = task.Description,
             Project = NormalizeProject(task.Project),
             Deadline = task.Deadline,
+            EstimatedMinutes = NormalizeEstimate(task.EstimatedMinutes),
             Priority = task.Priority,
             Status = TaskStatus.Todo,          // нова задача завжди починає з Todo
             CreatedAt = _clock.UtcNow          // час береться з IClock, а не з DateTime.UtcNow
@@ -56,6 +57,7 @@ public class TaskService : ITaskService
         entity.Description = task.Description;
         entity.Project = NormalizeProject(task.Project);
         entity.Deadline = task.Deadline;
+        entity.EstimatedMinutes = NormalizeEstimate(task.EstimatedMinutes);
         entity.Priority = task.Priority;
 
         if (task.Status != entity.Status)
@@ -83,6 +85,9 @@ public class TaskService : ITaskService
         return trimmed;
     }
 
+    private static int? NormalizeEstimate(int? minutes)
+        => minutes is > 0 ? minutes : null;
+
     private static string? NormalizeProject(string? project)
     {
         if (string.IsNullOrWhiteSpace(project)) return null;
@@ -100,6 +105,7 @@ public class TaskService : ITaskService
         Description = t.Description,
         Project = t.Project,
         Deadline = t.Deadline,
+        EstimatedMinutes = t.EstimatedMinutes,
         Priority = t.Priority,
         Status = t.Status,
         CreatedAt = t.CreatedAt,

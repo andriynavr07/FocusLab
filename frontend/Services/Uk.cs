@@ -22,6 +22,25 @@ public static class Uk
         };
     }
 
+    private static readonly string[] ShortMonthNames =
+    [
+        "СІЧ", "ЛЮТ", "БЕР", "КВІ", "ТРА", "ЧЕР",
+        "ЛИП", "СЕР", "ВЕР", "ЖОВ", "ЛИС", "ГРУ"
+    ];
+
+    /// <summary>«22 ВЕР 2026» — скорочений місяць великими літерами.</summary>
+    public static string ShortUpper(DateTime date, bool withYear = false)
+        => withYear ? $"{date.Day:00} {ShortMonthNames[date.Month - 1]} {date.Year}" : $"{date.Day} {ShortMonthNames[date.Month - 1]}";
+
+    /// <summary>Тривалість у хвилинах: «25 хв», «1 година», «1 год 25 хв».</summary>
+    public static string Duration(int minutes)
+    {
+        if (minutes < 60) return $"{minutes} хв";
+        var h = minutes / 60;
+        var m = minutes % 60;
+        return m == 0 ? $"{h} {Plural(h, "година", "години", "годин")}" : $"{h} год {m} хв";
+    }
+
     public static string Short(DateTime date) => $"{date.Day} {Month(date)}";
 
     public static string Month(DateTime date) => MonthNames[date.Month - 1];

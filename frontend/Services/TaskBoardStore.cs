@@ -19,7 +19,8 @@ public sealed class TaskBoardStore
     private static readonly HashSet<string> PersistedProperties =
     [
         nameof(TaskRow.Title), nameof(TaskRow.Project), nameof(TaskRow.PriorityKey),
-        nameof(TaskRow.Description), nameof(TaskRow.DueDate), nameof(TaskRow.Status)
+        nameof(TaskRow.Description), nameof(TaskRow.DueDate), nameof(TaskRow.Status),
+        nameof(TaskRow.EstimatedMinutes)
     ];
 
     private readonly ITaskService _service;
@@ -145,13 +146,17 @@ public sealed class TaskBoardStore
         Project = dto.Project ?? string.Empty,
         PriorityKey = dto.Priority switch
         {
-            Priority.High or Priority.Critical => "High",
+            Priority.Critical => "Critical",
+            Priority.High => "High",
             Priority.Medium => "Medium",
             _ => "Low"
         },
+        EstimatedMinutes = dto.EstimatedMinutes,
         Status = dto.Status.ToString(),
-        // У БД дата в UTC; в UI — локальна дата без часу.
-        DueDate = (dto.Deadline ?? dto.CreatedAt).ToLocalTime().Date
+        // CompletedAt задаємо після Status: сеттер Status скидає/ставить його сам.
+        CompletedAt = dto.CompletedAt?.ToLocalTime(),
+        // У БД дата в UTC; в UI — локальний час (з годинами й хвилинами).
+        DueDate = (dto.Deadline ?? dto.CreatedAt).ToLocalTime()
     };
 
     private static TaskDto ToDto(TaskRow row) => new()
@@ -162,12 +167,14 @@ public sealed class TaskBoardStore
         Project = string.IsNullOrWhiteSpace(row.Project) ? null : row.Project,
         Priority = row.PriorityKey switch
         {
+            "Critical" => Priority.Critical,
             "High" => Priority.High,
             "Medium" => Priority.Medium,
             _ => Priority.Low
         },
+        EstimatedMinutes = row.EstimatedMinutes,
         Status = ParseStatus(row.Status),
-        Deadline = DateTime.SpecifyKind(row.DueDate.Date, DateTimeKind.Local)
+        Deadline = DateTime.SpecifyKind(row.DueDate, DateTimeKind.Local)
     };
 
     private static TaskStatus ParseStatus(string status)

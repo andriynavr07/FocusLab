@@ -21,6 +21,8 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.Property(t => t.Deadline).HasColumnName("deadline")
             .HasConversion(new NullableUtcDateTimeConverter());
 
+        builder.Property(t => t.EstimatedMinutes).HasColumnName("estimated_minutes");
+
         builder.Property(t => t.Priority).HasColumnName("priority")
             .HasConversion<string>().HasMaxLength(20).IsRequired();
 

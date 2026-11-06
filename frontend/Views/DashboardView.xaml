@@ -51,10 +51,10 @@
                     Background="{DynamicResource FlSurface2}"
                     CornerRadius="{StaticResource CornerRadius10}"
                     BorderThickness="1"
-                    Cursor="Hand">
-                <Border.InputBindings>
-                    <MouseBinding MouseAction="LeftClick" Command="{Binding OpenCommand}"/>
-                </Border.InputBindings>
+                    Cursor="Hand"
+                    PreviewMouseLeftButtonDown="Card_PreviewMouseLeftButtonDown"
+                    MouseMove="Card_MouseMove"
+                    MouseLeftButtonUp="Card_MouseLeftButtonUp">
 
                 <Border.Style>
                     <Style TargetType="Border">
@@ -87,6 +87,12 @@
                                         Value="{DynamicResource FlWarn}"/>
 
                                 <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Priority}"
+                                                 Value="КРИТИЧНИЙ">
+                                        <Setter Property="Foreground"
+                                                Value="{DynamicResource FlDanger}"/>
+                                    </DataTrigger>
+
                                     <DataTrigger Binding="{Binding Priority}"
                                                  Value="ВИСОКИЙ">
                                         <Setter Property="Foreground"
@@ -142,11 +148,21 @@
                     </TextBlock>
 
                     <WrapPanel Margin="0,6,0,0">
-                        <TextBlock Text="25 ХВ ФОКУСУ"
+                        <TextBlock Text="{Binding EstimateText}"
                                    FontSize="{StaticResource TinyFontSize}"
                                    Padding="{StaticResource BadgePadding}"
                                    Background="{DynamicResource FlAccentSoft}"
-                                   Foreground="{DynamicResource FlAccent}"/>
+                                   Foreground="{DynamicResource FlAccent}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding EstimateText}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
 
                         <TextBlock
                             Margin="6,0,0,0"
@@ -161,39 +177,62 @@
 
         <!-- Колонка дошки -->
         <DataTemplate x:Key="BoardColumnTemplate">
-            <Grid Margin="4,0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="42"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+            <Border Margin="4,0" Padding="4,0,4,8"
+                    CornerRadius="{StaticResource CornerRadius10}"
+                    BorderThickness="1"
+                    AllowDrop="True"
+                    MinHeight="{Binding ViewportHeight, ElementName=BoardScroll}"
+                    DragEnter="Column_DragOver"
+                    DragOver="Column_DragOver"
+                    DragLeave="Column_DragLeave"
+                    Drop="Column_Drop">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderBrush" Value="Transparent"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDragOver}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource FlAccentSoft}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource FlAccent}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
 
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="42"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                    <TextBlock Text="{Binding Title}"
-                               Margin="0,0,6,0"
-                               FontWeight="{StaticResource SemiBoldFontWeight}"
-                               TextWrapping="Wrap"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <Border Grid.Column="1"
-                            Padding="{StaticResource CountBadgePadding}"
-                            Background="{DynamicResource FlSurface2}"
-                            CornerRadius="{StaticResource CornerRadius10}"
-                            VerticalAlignment="Top">
+                        <TextBlock Text="{Binding Title}"
+                                   Margin="0,0,6,0"
+                                   FontWeight="{StaticResource SemiBoldFontWeight}"
+                                   TextWrapping="Wrap"/>
 
-                        <TextBlock Text="{Binding Tasks.Count}"
-                                   FontSize="{StaticResource TinyFontSize}"
-                                   Foreground="{DynamicResource FlMuted}"/>
-                    </Border>
+                        <Border Grid.Column="1"
+                                Padding="{StaticResource CountBadgePadding}"
+                                Background="{DynamicResource FlSurface2}"
+                                CornerRadius="{StaticResource CornerRadius10}"
+                                VerticalAlignment="Top">
+
+                            <TextBlock Text="{Binding Tasks.Count}"
+                                       FontSize="{StaticResource TinyFontSize}"
+                                       Foreground="{DynamicResource FlMuted}"/>
+                        </Border>
+                    </Grid>
+
+                    <ItemsControl Grid.Row="1"
+                                  ItemsSource="{Binding Tasks}"
+                                  ItemTemplate="{StaticResource TaskCardTemplate}"/>
                 </Grid>
-
-                <ItemsControl Grid.Row="1"
-                              ItemsSource="{Binding Tasks}"
-                              ItemTemplate="{StaticResource TaskCardTemplate}"/>
-            </Grid>
+            </Border>
         </DataTemplate>
 
     </UserControl.Resources>
@@ -279,7 +318,7 @@
                             Background="{DynamicResource FlSurface2}"
                             CornerRadius="{StaticResource CornerRadius18}">
 
-                        <TextBlock Text="5 днів активності"
+                        <TextBlock Text="{Binding StreakText}"
                                    FontSize="{StaticResource SmallFontSize}"
                                    VerticalAlignment="Center"/>
                     </Border>
@@ -289,7 +328,7 @@
                             Margin="12,0,0,0"
                             Background="{DynamicResource FlSurface2}"
                             CornerRadius="{StaticResource CornerRadius16}">
-                        <TextBlock Text="О"
+                        <TextBlock Text="{Binding AvatarInitials}"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                     </Border>
@@ -353,7 +392,8 @@
                     </Border>
                 </Grid>
 
-                <ScrollViewer Grid.Row="2"
+                <ScrollViewer x:Name="BoardScroll"
+                              Grid.Row="2"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
 
@@ -464,7 +504,7 @@
                                        FontSize="{StaticResource SmallFontSize}"
                                        Foreground="{DynamicResource FlMuted}"/>
 
-                            <TextBlock Text="22 ВЕР"
+                            <TextBlock Text="{Binding ScheduleDateText}"
                                        HorizontalAlignment="Right"
                                        FontSize="{StaticResource SmallFontSize}"
                                        Foreground="{DynamicResource FlAccent}"/>
@@ -487,10 +527,33 @@
                                         <Border Grid.Column="1"
                                                 Padding="{StaticResource Padding8}"
                                                 Background="{DynamicResource FlSurface2}"
+                                                BorderThickness="1"
                                                 CornerRadius="{StaticResource CornerRadius8}">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsNext}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource FlAccent}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
                                             <StackPanel>
                                                 <TextBlock Text="{Binding Title}"
-                                                           TextWrapping="Wrap"/>
+                                                           TextWrapping="Wrap">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{DynamicResource FlText}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                                                    <Setter Property="TextDecorations" Value="Strikethrough"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource FlMuted}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
 
                                                 <TextBlock Text="{Binding Duration}"
                                                            Margin="0,3,0,0"
@@ -503,11 +566,18 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
+                        <TextBlock Text="На сьогодні немає запланованих завдань і фокус-сесій"
+                                   TextWrapping="Wrap"
+                                   FontSize="{StaticResource SmallFontSize}"
+                                   Foreground="{DynamicResource FlMuted}"
+                                   Visibility="{Binding IsScheduleEmpty, Converter={StaticResource FlBoolToVis}}"/>
+
                     </StackPanel>
                 </ScrollViewer>
             </Border>
         </Grid>
-        <Grid Visibility="{Binding IsDetailsOpen, Converter={StaticResource FlBoolToVis}}">
+        <Grid Grid.Row="0" Grid.RowSpan="2" Panel.ZIndex="10"
+              Visibility="{Binding IsDetailsOpen, Converter={StaticResource FlBoolToVis}}">
             <Border Background="{DynamicResource FlOverlay}">
                 <Border.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding CloseDetailsCommand}"/>
@@ -524,11 +594,22 @@
                     </Grid>
                     <TextBlock Text="{Binding SelectedTask.Title}" FontSize="20" FontWeight="SemiBold"
                                TextWrapping="Wrap" Margin="0,20,0,10"/>
-                    <TextBlock Text="{Binding SelectedTask.Description, TargetNullValue=Опис не додано}"
-                               Foreground="{DynamicResource FlMuted}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    <TextBlock Text="{Binding SelectedTask.Description}"
+                               Foreground="{DynamicResource FlMuted}" TextWrapping="Wrap" Margin="0,0,0,16">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedTask.Description}" Value="">
+                                        <Setter Property="Text" Value="Опис не додано"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <TextBlock Text="{Binding SelectedTask.Project, StringFormat='Проєкт: {0}'}"/>
                     <TextBlock Text="{Binding SelectedTask.PriorityLabel, StringFormat='Пріоритет: {0}'}" Margin="0,6,0,0"/>
                     <TextBlock Text="{Binding SelectedTask.DueText, StringFormat='Термін: {0}'}" Margin="0,6,0,0"/>
+                    <TextBlock Text="{Binding SelectedTask.EstimateText, StringFormat='Оцінка часу: {0}'}" Margin="0,6,0,0"/>
                     <TextBlock Text="Статус" Foreground="{DynamicResource FlMuted}" Margin="0,16,0,6"/>
                     <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding TaskStatuses}"
                               SelectedItem="{Binding SelectedTask.Status, Mode=TwoWay}"/>

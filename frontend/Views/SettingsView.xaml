@@ -264,6 +264,8 @@
                                Margin="0,16,0,8"/>
                     <TextBox Style="{StaticResource FlTextBox}" Tag="name@example.com"
                              Text="{Binding EditEmail, UpdateSourceTrigger=PropertyChanged}"/>
+                    <TextBlock Text="{Binding EditError}" TextWrapping="Wrap" Margin="0,12,0,0"
+                               Foreground="{DynamicResource FlDanger}"/>
                     <Grid Margin="0,26,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>

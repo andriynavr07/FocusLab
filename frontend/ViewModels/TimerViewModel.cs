@@ -115,6 +115,9 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         Refresh();
     }
 
+    /// <summary>Фокус-інтервал завершено або перервано (сесію збережено) — головна оновлює статистику.</summary>
+    public event EventHandler? FocusSessionFinished;
+
     public ObservableCollection<PresetOption> Presets { get; }
     public ObservableCollection<TimelineEntry> Timeline { get; }
     public string[] NoiseOptions { get; } = { "Звуки природи", "Білий шум", "Тиша" };
@@ -237,6 +240,7 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
                 "FocusLab", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         Refresh();
+        FocusSessionFinished?.Invoke(this, EventArgs.Empty);
     }
 
     private async Task SkipAsync()
@@ -308,6 +312,7 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
                 Text = $"{DateTime.Now:HH:mm} - Робота ({(int)Math.Round(_lastFocusDuration.TotalMinutes)}м)",
                 State = "Done"
             });
+            FocusSessionFinished?.Invoke(this, EventArgs.Empty);
         }
         Refresh();
     });

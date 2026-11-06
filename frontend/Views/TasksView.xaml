@@ -49,6 +49,10 @@
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding PriorityKey}" Value="Critical">
+                    <Setter TargetName="Badge" Property="Background" Value="{DynamicResource FlDangerSoft}"/>
+                    <Setter TargetName="BadgeText" Property="Foreground" Value="{DynamicResource FlDanger}"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding PriorityKey}" Value="High">
                     <Setter TargetName="Badge" Property="Background" Value="{DynamicResource FlDangerSoft}"/>
                     <Setter TargetName="BadgeText" Property="Foreground" Value="{DynamicResource FlDanger}"/>
@@ -167,58 +171,151 @@
             </Grid>
         </Grid>
 
-        <!-- МОДАЛКА: нове завдання -->
+        <!-- МОДАЛКА: нове завдання (макет focuslab-add-task-modal) -->
         <Grid Visibility="{Binding IsAddOpen, Converter={StaticResource FlBoolToVis}}">
             <Border Background="{DynamicResource FlOverlay}">
                 <Border.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding CloseAddCommand}"/>
                 </Border.InputBindings>
             </Border>
-            <Border Width="460" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+            <Border Width="500" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
                     Background="{DynamicResource FlSurface}" BorderBrush="{DynamicResource FlLine}"
-                    BorderThickness="1" CornerRadius="20" Padding="28,26">
+                    BorderThickness="1" CornerRadius="20" Padding="30,28,30,30">
                 <StackPanel>
+                    <!-- Заголовок + кнопка закриття -->
                     <Grid>
-                        <TextBlock Text="Нове завдання" FontSize="22" FontWeight="Bold"/>
+                        <TextBlock Text="Нове завдання" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"/>
                         <Button HorizontalAlignment="Right" Style="{StaticResource FlIconButton}" Content="&#xE711;"
-                                BorderBrush="{DynamicResource FlLine}" Command="{Binding CloseAddCommand}"/>
+                                Width="34" Height="34" Padding="0" FontSize="13"
+                                Background="{DynamicResource FlSurface2}" BorderBrush="{DynamicResource FlLine}"
+                                Command="{Binding CloseAddCommand}"/>
                     </Grid>
 
+                    <!-- Назва -->
                     <TextBlock Text="Назва * (1–255)" FontWeight="SemiBold" FontSize="13"
-                               Foreground="{DynamicResource FlMuted}" Margin="0,20,0,8"/>
+                               Foreground="{DynamicResource FlMuted}" Margin="0,22,0,8"/>
                     <TextBox Style="{StaticResource FlTextBox}" Tag="Введіть назву завдання..." MaxLength="255"
                              Text="{Binding NewTitle, UpdateSourceTrigger=PropertyChanged}"/>
 
+                    <!-- Опис -->
                     <TextBlock Text="Опис" FontWeight="SemiBold" FontSize="13"
-                               Foreground="{DynamicResource FlMuted}" Margin="0,16,0,8"/>
-                    <TextBox Style="{StaticResource FlTextBox}" Tag="Деталі завдання..."
+                               Foreground="{DynamicResource FlMuted}" Margin="0,18,0,8"/>
+                    <TextBox Style="{StaticResource FlTextBox}" Tag="Додайте опис (необов'язково)..."
                              Text="{Binding NewDescription, UpdateSourceTrigger=PropertyChanged}"
-                             AcceptsReturn="True" TextWrapping="Wrap" Height="76" VerticalContentAlignment="Top"/>
+                             AcceptsReturn="True" TextWrapping="Wrap" Height="96" VerticalContentAlignment="Top"/>
 
+                    <!-- Проєкт -->
                     <TextBlock Text="Проєкт" FontWeight="SemiBold" FontSize="13"
-                               Foreground="{DynamicResource FlMuted}" Margin="0,16,0,8"/>
-                    <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding Projects}"
-                              SelectedItem="{Binding NewProject, Mode=TwoWay}"/>
+                               Foreground="{DynamicResource FlMuted}" Margin="0,18,0,8"/>
+                    <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding ProjectChoices}"
+                              SelectedItem="{Binding NewProject, Mode=TwoWay}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="8" Height="8" Margin="0,0,10,0" Fill="{DynamicResource FlAccent}"/>
+                                    <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
 
+                    <!-- Пріоритет -->
                     <TextBlock Text="Пріоритет" FontWeight="SemiBold" FontSize="13"
-                               Foreground="{DynamicResource FlMuted}" Margin="0,16,0,8"/>
-                    <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding Priorities}"
-                              SelectedItem="{Binding NewPriority, Mode=TwoWay}" DisplayMemberPath="Label"/>
+                               Foreground="{DynamicResource FlMuted}" Margin="0,18,0,8"/>
+                    <ListBox ItemsSource="{Binding Priorities}" SelectedItem="{Binding NewPriority, Mode=TwoWay}"
+                             ItemContainerStyle="{StaticResource FlPriorityItem}"
+                             Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,-8,0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="1"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                    </ListBox>
 
-                    <TextBlock Text="Термін виконання" FontWeight="SemiBold" FontSize="13"
-                               Foreground="{DynamicResource FlMuted}" Margin="0,16,0,8"/>
-                    <DatePicker SelectedDate="{Binding NewDueDate, Mode=TwoWay}" MinHeight="38"/>
+                    <!-- Дата виконання + Оцінка часу -->
+                    <Grid Margin="0,18,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                    <Grid Margin="0,26,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Дата виконання" FontWeight="SemiBold" FontSize="13"
+                                       Foreground="{DynamicResource FlMuted}" Margin="0,0,0,8"/>
+                            <Grid>
+                                <ToggleButton Style="{StaticResource FlFieldToggle}"
+                                              IsChecked="{Binding IsDatePickerOpen, Mode=TwoWay}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Width="12" Height="12" CornerRadius="3" Margin="0,0,10,0"
+                                                Background="{DynamicResource FlAccent}"/>
+                                        <TextBlock Text="{Binding NewDueText}" FontWeight="Medium"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </ToggleButton>
+                                <Popup IsOpen="{Binding IsDatePickerOpen, Mode=TwoWay}" StaysOpen="False"
+                                       Placement="Bottom" AllowsTransparency="True" PopupAnimation="Fade">
+                                    <Border Margin="0,6,0,0" Padding="10" CornerRadius="12"
+                                            Background="{DynamicResource FlSurface}"
+                                            BorderBrush="{DynamicResource FlLine}" BorderThickness="1">
+                                        <StackPanel>
+                                            <Calendar SelectedDate="{Binding NewDueDatePick, Mode=TwoWay}"
+                                                      DisplayDate="{Binding NewDueDate, Mode=OneWay}"/>
+                                            <Grid Margin="0,10,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding Hours}"
+                                                          SelectedItem="{Binding NewDueHour, Mode=TwoWay}"
+                                                          ItemStringFormat="{}{0:00}"/>
+                                                <TextBlock Grid.Column="1" Text=":" FontWeight="Bold" Margin="8,0"
+                                                           VerticalAlignment="Center"/>
+                                                <ComboBox Grid.Column="2" Style="{StaticResource FlComboBox}"
+                                                          ItemsSource="{Binding Minutes}"
+                                                          SelectedItem="{Binding NewDueMinute, Mode=TwoWay}"
+                                                          ItemStringFormat="{}{0:00}"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Оцінка часу" FontWeight="SemiBold" FontSize="13"
+                                       Foreground="{DynamicResource FlMuted}" Margin="0,0,0,8"/>
+                            <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding EstimateOptions}"
+                                      SelectedItem="{Binding NewEstimate, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="12" Height="12" Margin="0,0,10,0"
+                                                     Fill="{DynamicResource FlAccent}"/>
+                                            <TextBlock Text="{Binding Label}" FontWeight="Medium"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Кнопки -->
+                    <Grid Margin="0,28,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Style="{StaticResource FlButton}" Content="Скасувати" Padding="22,12"
-                                Command="{Binding CloseAddCommand}"/>
+                        <Button Style="{StaticResource FlButton}" Content="Скасувати" Padding="24,12"
+                                Background="Transparent" Command="{Binding CloseAddCommand}"/>
                         <Button Grid.Column="2" Style="{StaticResource FlPrimaryButton}" Content="Створити завдання"
-                                Padding="30,12" Command="{Binding CreateTaskCommand}" IsEnabled="{Binding CanCreate}"/>
+                                Padding="32,12" Command="{Binding CreateTaskCommand}"
+                                IsEnabled="{Binding CanCreate}"/>
                     </Grid>
                 </StackPanel>
             </Border>

@@ -159,6 +159,10 @@ namespace FocusLab.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("description");
 
+                    b.Property<int?>("EstimatedMinutes")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("estimated_minutes");
+
                     b.Property<string>("Priority")
                         .IsRequired()
                         .HasMaxLength(20)

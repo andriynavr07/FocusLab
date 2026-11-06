@@ -40,6 +40,7 @@ public partial class App : Application
                     services.AddSingleton<IAuthService, AuthService>();
                     services.AddSingleton<ITaskService, TaskService>();
                     services.AddSingleton<IFocusService, FocusService>();
+                    services.AddSingleton<IActivityService, ActivityService>();
                     services.AddSingleton<IFocusTimerService, FocusTimerService>();
 
                     // Реалізації, яким потрібен Windows (живуть у frontend)
