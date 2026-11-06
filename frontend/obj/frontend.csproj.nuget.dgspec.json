@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "d:\\FocusLab\\frontend\\frontend.csproj": {}
+    "D:\\FocusLab\\frontend\\frontend.csproj": {}
   },
   "projects": {
-    "d:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj": {
+    "D:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj",
+        "projectUniqueName": "D:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj",
         "projectName": "FocusLab.Application",
-        "projectPath": "d:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj",
+        "projectPath": "D:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj",
         "packagesPath": "C:\\Users\\Lenovo\\.nuget\\packages\\",
-        "outputPath": "d:\\FocusLab\\Backend\\src\\Application\\obj\\",
+        "outputPath": "D:\\FocusLab\\Backend\\src\\Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -34,8 +34,8 @@
             "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "d:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj": {
-                "projectPath": "d:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj"
+              "D:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj": {
+                "projectPath": "D:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj"
               }
             }
           }
@@ -56,6 +56,12 @@
         "net8.0": {
           "framework": "net8.0",
           "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.2, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -90,14 +96,14 @@
         }
       }
     },
-    "d:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj": {
+    "D:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj",
+        "projectUniqueName": "D:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj",
         "projectName": "FocusLab.Domain",
-        "projectPath": "d:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj",
+        "projectPath": "D:\\FocusLab\\Backend\\src\\Domain\\FocusLab.Domain.csproj",
         "packagesPath": "C:\\Users\\Lenovo\\.nuget\\packages\\",
-        "outputPath": "d:\\FocusLab\\Backend\\src\\Domain\\obj\\",
+        "outputPath": "D:\\FocusLab\\Backend\\src\\Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -172,14 +178,14 @@
         }
       }
     },
-    "d:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj": {
+    "D:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj",
+        "projectUniqueName": "D:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj",
         "projectName": "FocusLab.Infrastructure",
-        "projectPath": "d:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj",
+        "projectPath": "D:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj",
         "packagesPath": "C:\\Users\\Lenovo\\.nuget\\packages\\",
-        "outputPath": "d:\\FocusLab\\Backend\\src\\Infrastructure\\obj\\",
+        "outputPath": "D:\\FocusLab\\Backend\\src\\Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -202,8 +208,8 @@
             "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "d:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj": {
-                "projectPath": "d:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj"
+              "D:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj": {
+                "projectPath": "D:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj"
               }
             }
           }
@@ -270,14 +276,14 @@
         }
       }
     },
-    "d:\\FocusLab\\frontend\\frontend.csproj": {
+    "D:\\FocusLab\\frontend\\frontend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\FocusLab\\frontend\\frontend.csproj",
+        "projectUniqueName": "D:\\FocusLab\\frontend\\frontend.csproj",
         "projectName": "frontend",
-        "projectPath": "d:\\FocusLab\\frontend\\frontend.csproj",
+        "projectPath": "D:\\FocusLab\\frontend\\frontend.csproj",
         "packagesPath": "C:\\Users\\Lenovo\\.nuget\\packages\\",
-        "outputPath": "d:\\FocusLab\\frontend\\obj\\",
+        "outputPath": "D:\\FocusLab\\frontend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -300,11 +306,11 @@
             "framework": "net8.0-windows10.0.19041",
             "targetAlias": "net8.0-windows10.0.19041.0",
             "projectReferences": {
-              "d:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj": {
-                "projectPath": "d:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj"
+              "D:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj": {
+                "projectPath": "D:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj"
               },
-              "d:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj": {
-                "projectPath": "d:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj"
+              "D:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj": {
+                "projectPath": "D:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj"
               }
             }
           }

@@ -59,7 +59,7 @@ namespace Frontend.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/frontend;V1.0.0.0;component/views/topbar.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/frontend;component/views/topbar.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\TopBar.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

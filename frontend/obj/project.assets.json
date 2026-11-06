@@ -1080,7 +1080,8 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
-          "FocusLab.Domain": "1.0.0"
+          "FocusLab.Domain": "1.0.0",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.2"
         },
         "compile": {
           "bin/placeholder/FocusLab.Application.dll": {}
@@ -2756,11 +2757,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\FocusLab\\frontend\\frontend.csproj",
+      "projectUniqueName": "D:\\FocusLab\\frontend\\frontend.csproj",
       "projectName": "frontend",
-      "projectPath": "d:\\FocusLab\\frontend\\frontend.csproj",
+      "projectPath": "D:\\FocusLab\\frontend\\frontend.csproj",
       "packagesPath": "C:\\Users\\Lenovo\\.nuget\\packages\\",
-      "outputPath": "d:\\FocusLab\\frontend\\obj\\",
+      "outputPath": "D:\\FocusLab\\frontend\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -2783,11 +2784,11 @@
           "framework": "net8.0-windows10.0.19041",
           "targetAlias": "net8.0-windows10.0.19041.0",
           "projectReferences": {
-            "d:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj": {
-              "projectPath": "d:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj"
+            "D:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj": {
+              "projectPath": "D:\\FocusLab\\Backend\\src\\Application\\FocusLab.Application.csproj"
             },
-            "d:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj": {
-              "projectPath": "d:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj"
+            "D:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj": {
+              "projectPath": "D:\\FocusLab\\Backend\\src\\Infrastructure\\FocusLab.Infrastructure.csproj"
             }
           }
         }

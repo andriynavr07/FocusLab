@@ -117,10 +117,7 @@ public class TasksViewModel : PageViewModelBase
         View = new CollectionViewSource { Source = Rows }.View;
         View.Filter = Filter;
         _store.Changed += (_, _) =>
-        {
-            View.Refresh();
-            RaiseList();
-        };
+            System.Windows.Application.Current.Dispatcher.InvokeAsync(RefreshView);
         ApplySort();
 
         OpenNewTaskCommand = new RelayCommand(_ => OpenAdd());

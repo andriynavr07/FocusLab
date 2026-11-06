@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FocusLab.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5d73868535a6f3fbbfe04c74497d2a0eed4b517b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f6be0f7f3d593d1e00d87bbbebccc19217bd1b9b")]
 [assembly: System.Reflection.AssemblyProductAttribute("FocusLab.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FocusLab.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
