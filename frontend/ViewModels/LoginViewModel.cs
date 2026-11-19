@@ -40,9 +40,11 @@ public class LoginViewModel : PageViewModelBase
 
     public string ErrorMessage
     {
-        get => _errorMessage;
+        get => Frontend.Services.UiPreferences.Instance.Translate(_errorMessage);
         private set { _errorMessage = value; OnPropertyChanged(); }
     }
+
+    protected override void OnLanguageChanged() => OnPropertyChanged(nameof(ErrorMessage));
 
     public bool RememberMe
     {
@@ -66,8 +68,8 @@ public class LoginViewModel : PageViewModelBase
         NavigateToRegisterCommand = new RelayCommand(_ => RegisterRequested?.Invoke());
         ForgotPasswordCommand = new RelayCommand(_ =>
             MessageBox.Show(
-                "Відновлення пароля недоступне для локального акаунта.",
-                "Відновлення пароля",
+                Frontend.Services.UiPreferences.Instance.Translate("Відновлення пароля недоступне для локального акаунта."),
+                Frontend.Services.UiPreferences.Instance.Translate("Відновлення пароля"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information));
     }
@@ -88,7 +90,7 @@ public class LoginViewModel : PageViewModelBase
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Помилка входу: {ex.Message}";
+            ErrorMessage = $"{Frontend.Services.UiPreferences.Instance.Translate("Помилка входу")}: {ex.Message}";
         }
         finally
         {

@@ -7,6 +7,7 @@ namespace Frontend.ViewModels;
 public class WorkspaceViewModel : ViewModelBase
 {
     private readonly Action _onLogout;
+    private readonly ICatalogService _catalog;
     private readonly TaskBoardStore _taskStore;
     private readonly DashboardViewModel _dashboard;
     private readonly TasksViewModel _tasks;
@@ -37,21 +38,29 @@ public class WorkspaceViewModel : ViewModelBase
         TimerViewModel timer,
         IActivityService activity,
         IAuthService auth,
+        ICatalogService catalog,
         Action onLogout)
     {
         _onLogout = onLogout ?? throw new ArgumentNullException(nameof(onLogout));
         _taskStore = taskStore ?? throw new ArgumentNullException(nameof(taskStore));
         _timer = timer ?? throw new ArgumentNullException(nameof(timer));
-        _dashboard = new DashboardViewModel(_taskStore, _timer, activity ?? throw new ArgumentNullException(nameof(activity)));
-        _tasks = new TasksViewModel(_taskStore);
+        _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+        _dashboard = new DashboardViewModel(
+            _taskStore, _timer, activity ?? throw new ArgumentNullException(nameof(activity)), _catalog);
+        _tasks = new TasksViewModel(_taskStore, _catalog);
         _calendar = new CalendarViewModel(_taskStore);
         _settings = new SettingsViewModel(_timer, auth ?? throw new ArgumentNullException(nameof(auth)));
         _currentPage = _dashboard;
+        _dashboard.EditTaskRequested += OpenEditTask;
 
         foreach (var page in new PageViewModelBase[] { _dashboard, _tasks, _calendar, _timer, _settings })
             page.NewTaskRequested += OpenNewTask;
 
-        ShowDashboardCommand = new RelayCommand(_ => CurrentPage = _dashboard);
+        ShowDashboardCommand = new RelayCommand(async _ =>
+        {
+            CurrentPage = _dashboard;
+            await _dashboard.RefreshCatalogAsync();
+        });
         ShowTasksCommand = new RelayCommand(_ => CurrentPage = _tasks);
         ShowCalendarCommand = new RelayCommand(_ => CurrentPage = _calendar);
         ShowTimerCommand = new RelayCommand(_ => CurrentPage = _timer);
@@ -71,5 +80,11 @@ public class WorkspaceViewModel : ViewModelBase
     {
         CurrentPage = _tasks;
         _tasks.OpenNewTaskCommand.Execute(null);
+    }
+
+    private void OpenEditTask(TaskRow row)
+    {
+        CurrentPage = _tasks;
+        _tasks.OpenEditTask(row);
     }
 }

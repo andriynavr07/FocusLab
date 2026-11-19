@@ -1,22 +1,28 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using FocusLab.Application.Abstractions;
+using FocusLab.Application.Dto;
 using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
-public class PriorityOption(string key, string label)
+public class PriorityOption(string key, string label) : BoardBase
 {
     public string Key { get; } = key;
-    public string Label { get; } = label;
+    public string Label => UiPreferences.Instance.Translate(label);
+
+    public void RefreshLanguage() => OnPropertyChanged(nameof(Label));
 }
 
 /// <summary>Варіант списку «Оцінка часу».</summary>
-public class EstimateOption(int minutes)
+public class EstimateOption(int minutes) : BoardBase
 {
     public int Minutes { get; } = minutes;
-    public string Label { get; } = Uk.Duration(minutes);
+    public string Label => Uk.Duration(Minutes);
+    public void RefreshLanguage() => OnPropertyChanged(nameof(Label));
 }
 
 public class TaskRow : BoardBase
@@ -31,9 +37,18 @@ public class TaskRow : BoardBase
     private int _id;
     private int? _estimatedMinutes;
     private DateTime? _completedAt;
+    private DateTime _createdAt;
+    private int[] _tagIds = [];
+    private TaskSubtaskDto[] _subtasks = [];
+
+    public TaskRow()
+        => PropertyChangedEventManager.AddHandler(UiPreferences.Instance, OnPreferencesChanged, nameof(UiPreferences.Language));
 
     /// <summary>Id задачі в БД; 0 — ще не збережено.</summary>
     public int Id { get => _id; set => SetField(ref _id, value); }
+    public DateTime CreatedAt { get => _createdAt; set => SetField(ref _createdAt, value); }
+    public int[] TagIds { get => _tagIds; set => SetField(ref _tagIds, value); }
+    public TaskSubtaskDto[] Subtasks { get => _subtasks; set => SetField(ref _subtasks, value); }
     public string Title { get => _title; set => SetField(ref _title, value); }
     public string Project { get => _project; set => SetField(ref _project, value); }
     public string PriorityKey
@@ -93,31 +108,43 @@ public class TaskRow : BoardBase
         set => Status = value ? "Done" : "Todo";
     }
 
-    public string StatusText => Status switch
+    public string StatusText => UiPreferences.Instance.Translate(Status switch
     {
         "Done" => "Виконано",
         "InProgress" => "Виконується",
         "Review" => "На перевірці",
         "Deferred" => "Відкладено",
         _ => "Завдання"
-    };
+    });
     public string StatusDisplay => IsDone ? StatusText + " ✓" : StatusText;
-    public string PriorityLabel => PriorityKey switch { "Critical" => "КРИТИЧНИЙ", "High" => "ВИСОКИЙ", "Medium" => "СЕРЕДНІЙ", _ => "НИЗЬКИЙ" };
+    public string PriorityLabel => UiPreferences.Instance.Translate(
+        PriorityKey switch { "Critical" => "КРИТИЧНИЙ", "High" => "ВИСОКИЙ", "Medium" => "СЕРЕДНІЙ", _ => "НИЗЬКИЙ" });
     public int PriorityRank => PriorityKey switch { "Critical" => 0, "High" => 1, "Medium" => 2, _ => 3 };
     public string EstimateText => EstimatedMinutes is > 0 ? Uk.Duration(EstimatedMinutes.Value).ToUpperInvariant() : string.Empty;
-    public string DueText => DueDate.Date == DateTime.Today ? "Сьогодні" : Uk.Short(DueDate);
+    public string DueText => DueDate.Date == DateTime.Today ? UiPreferences.Instance.Translate("Сьогодні") : Uk.Short(DueDate);
     public bool IsOverdue => !IsDone && DueDate.Date < DateTime.Today;
 
+    private void OnPreferencesChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(StatusDisplay));
+        OnPropertyChanged(nameof(PriorityLabel));
+        OnPropertyChanged(nameof(EstimateText));
+        OnPropertyChanged(nameof(DueText));
+    }
+
     public ICommand DeleteCommand { get; set; } = null!;
+    public ICommand EditCommand { get; set; } = null!;
 }
 
 public class TasksViewModel : PageViewModelBase
 {
     private readonly TaskBoardStore _store;
+    private readonly ICatalogService _catalog;
     private string _selStatus = "Усі статуси";
     private string _selProject = "Усі проєкти";
     private string _selPriority = "Усі пріоритети";
-    private string _selSort = "Датою виконання";
+    private string _selSort = "Дедлайном";
     private bool _isAddOpen;
     private string _newTitle = "";
     private string _newDescription = "";
@@ -125,16 +152,24 @@ public class TasksViewModel : PageViewModelBase
     private int _newDueHour = 18;
     private int _newDueMinute;
     private bool _isDatePickerOpen;
+    private TaskRow? _editingTask;
+    private string _formError = string.Empty;
+    private bool _isProjectManagerOpen;
+    private bool _isTagManagerOpen;
+    private string _catalogName = string.Empty;
+    private string _catalogColor = "#3B6EF5";
+    private string _catalogError = string.Empty;
+    private ProjectDto? _selectedProjectRecord;
+    private TagDto? _selectedTagRecord;
+    private string _newSubtaskTitle = string.Empty;
     private string _newProject;
     private PriorityOption _newPriority;
     private EstimateOption _newEstimate;
 
-    public TasksViewModel(TaskBoardStore store)
+    public TasksViewModel(TaskBoardStore store, ICatalogService catalog)
     {
         _store = store;
-        Projects = new[] { "Launch Plan", "Backend V2", "Billing Module", "FocusFlow App" };
-        ProjectFilters = new[] { "Усі проєкти" }.Concat(Projects).ToArray();
-        ProjectChoices = new[] { NoProject }.Concat(Projects).ToArray();
+        _catalog = catalog;
         // Порядок і назви — як на макеті модалки «Нове завдання».
         Priorities = new[]
         {
@@ -160,6 +195,25 @@ public class TasksViewModel : PageViewModelBase
         CloseAddCommand = new RelayCommand(_ => { IsDatePickerOpen = false; IsAddOpen = false; });
         SelectPriorityCommand = new RelayCommand(p => { if (p is PriorityOption o) NewPriority = o; });
         CreateTaskCommand = new RelayCommand(_ => Create());
+        EditTaskCommand = new RelayCommand(task => { if (task is TaskRow row) OpenEdit(row); });
+        OpenProjectManagerCommand = new RelayCommand(async _ => await OpenProjectManagerAsync());
+        OpenTagManagerCommand = new RelayCommand(async _ => await OpenTagManagerAsync());
+        CloseProjectManagerCommand = new RelayCommand(_ => IsProjectManagerOpen = false);
+        CloseTagManagerCommand = new RelayCommand(_ => IsTagManagerOpen = false);
+        NewProjectCommand = new RelayCommand(_ => BeginNewProject());
+        SaveProjectCommand = new RelayCommand(async _ => await SaveProjectAsync());
+        DeleteProjectCommand = new RelayCommand(async _ => await DeleteProjectAsync());
+        NewTagCommand = new RelayCommand(_ => BeginNewTag());
+        SaveTagCommand = new RelayCommand(async _ => await SaveTagAsync());
+        DeleteTagCommand = new RelayCommand(async _ => await DeleteTagAsync());
+        ResetFiltersCommand = new RelayCommand(_ => ResetFilters());
+        AddSubtaskCommand = new RelayCommand(_ => AddSubtask());
+        RemoveSubtaskCommand = new RelayCommand(item => { if (item is EditableSubtask subtask) ChecklistItems.Remove(subtask); });
+        MoveSubtaskUpCommand = new RelayCommand(item => MoveSubtask(item as EditableSubtask, -1));
+        MoveSubtaskDownCommand = new RelayCommand(item => MoveSubtask(item as EditableSubtask, 1));
+        Rows.CollectionChanged += (_, _) => PrepareEditCommands();
+        PrepareEditCommands();
+        _ = LoadCatalogAsync();
         ToggleAllCommand = new RelayCommand(_ =>
         {
             var target = !AllDone;
@@ -170,30 +224,121 @@ public class TasksViewModel : PageViewModelBase
     public ObservableCollection<TaskRow> Rows => _store.Rows;
     public ICollectionView View { get; }
 
-    public string[] StatusFilters { get; } = { "Усі статуси", "Завдання", "Виконується", "На перевірці", "Відкладено", "Виконано" };
-    public string[] ProjectFilters { get; }
-    public string[] PriorityFilters { get; } = { "Усі пріоритети", "Критичний", "Високий", "Середній", "Низький" };
-    public string[] SortOptions { get; } = { "Датою виконання", "Назвою", "Пріоритетом" };
-    public string[] Projects { get; }
+    private static readonly string[] StatusFilterTexts = { "Усі статуси", "Завдання", "Виконується", "На перевірці", "Відкладено", "Виконано" };
+    private static readonly string[] PriorityFilterTexts = { "Усі пріоритети", "Критичний", "Високий", "Середній", "Низький" };
+    private static readonly string[] SortOptionTexts = { "Дедлайном", "Пріоритетом", "Датою створення", "Назвою" };
+
+    public string[] StatusFilters => StatusFilterTexts.Select(UiPreferences.Instance.Translate).ToArray();
+    public ObservableCollection<string> ProjectFilters { get; } = ["Усі проєкти"];
+    public string[] PriorityFilters => PriorityFilterTexts.Select(UiPreferences.Instance.Translate).ToArray();
+    public string[] SortOptions => SortOptionTexts.Select(UiPreferences.Instance.Translate).ToArray();
+    public ObservableCollection<string> Projects { get; } = [];
 
     /// <summary>Значення «Без проєкту» у випадному списку форми створення.</summary>
     public const string NoProject = "Без проєкту";
-    public string[] ProjectChoices { get; }
+    public ObservableCollection<string> ProjectChoices { get; } = [NoProject];
+    public ObservableCollection<ProjectDto> ProjectRecords { get; } = [];
+    public ObservableCollection<TagDto> TagRecords { get; } = [];
+    public ObservableCollection<TagOption> TaskTagOptions { get; } = [];
+    public ObservableCollection<TagOption> FilterTagOptions { get; } = [];
+    public ObservableCollection<EditableSubtask> ChecklistItems { get; } = [];
+    public string[] ColorOptions { get; } =
+        ["#3B6EF5", "#10B981", "#F59E0B", "#EF4444", "#A855F7", "#06B6D4", "#EC4899"];
     public PriorityOption[] Priorities { get; }
     public EstimateOption[] EstimateOptions { get; }
     public int[] Hours { get; }
     public int[] Minutes { get; }
 
-    public string SelectedStatus { get => _selStatus; set { if (SetField(ref _selStatus, value)) RefreshView(); } }
-    public string SelectedProject { get => _selProject; set { if (SetField(ref _selProject, value)) RefreshView(); } }
-    public string SelectedPriority { get => _selPriority; set { if (SetField(ref _selPriority, value)) RefreshView(); } }
-    public string SelectedSort { get => _selSort; set { if (SetField(ref _selSort, value)) ApplySort(); } }
+    public string SelectedStatus
+    {
+        get => UiPreferences.Instance.Translate(_selStatus);
+        set { if (SetField(ref _selStatus, ResolveOption(value, StatusFilterTexts))) RefreshView(); }
+    }
+    public string SelectedProject
+    {
+        get => _selProject == "Усі проєкти" ? UiPreferences.Instance.Translate(_selProject) : _selProject;
+        set
+        {
+            var source = value == UiPreferences.Instance.Translate("Усі проєкти") ? "Усі проєкти" : value;
+            if (SetField(ref _selProject, source)) RefreshView();
+        }
+    }
+    public string SelectedPriority
+    {
+        get => UiPreferences.Instance.Translate(_selPriority);
+        set { if (SetField(ref _selPriority, ResolveOption(value, PriorityFilterTexts))) RefreshView(); }
+    }
+    public string SelectedSort
+    {
+        get => UiPreferences.Instance.Translate(_selSort);
+        set { if (SetField(ref _selSort, ResolveOption(value, SortOptionTexts))) ApplySort(); }
+    }
 
     public bool AllDone => View.Cast<TaskRow>().Any() && View.Cast<TaskRow>().All(r => r.IsDone);
     public bool IsEmpty => View.IsEmpty;
 
     public bool IsAddOpen { get => _isAddOpen; set => SetField(ref _isAddOpen, value); }
-    public string NewTitle { get => _newTitle; set { if (SetField(ref _newTitle, value)) OnPropertyChanged(nameof(CanCreate)); } }
+    public bool IsProjectManagerOpen { get => _isProjectManagerOpen; set => SetField(ref _isProjectManagerOpen, value); }
+    public bool IsTagManagerOpen { get => _isTagManagerOpen; set => SetField(ref _isTagManagerOpen, value); }
+    public string CatalogName { get => _catalogName; set => SetField(ref _catalogName, value); }
+    public string CatalogColor { get => _catalogColor; set => SetField(ref _catalogColor, value); }
+    public string CatalogError { get => _catalogError; private set => SetField(ref _catalogError, value); }
+    public ProjectDto? SelectedProjectRecord
+    {
+        get => _selectedProjectRecord;
+        set
+        {
+            if (!SetField(ref _selectedProjectRecord, value) || value is null) return;
+            CatalogName = value.Name;
+            CatalogColor = value.Color;
+            CatalogError = string.Empty;
+        }
+    }
+    public TagDto? SelectedTagRecord
+    {
+        get => _selectedTagRecord;
+        set
+        {
+            if (!SetField(ref _selectedTagRecord, value) || value is null) return;
+            CatalogName = value.Name;
+            CatalogColor = value.Color;
+            CatalogError = string.Empty;
+        }
+    }
+    public bool IsEditing => _editingTask is not null;
+    public string FormTitle => UiPreferences.Instance.Translate(IsEditing ? "Редагувати завдання" : "Нове завдання");
+    public string SubmitButtonText => UiPreferences.Instance.Translate(IsEditing ? "Зберегти зміни" : "Створити завдання");
+    public string FormError
+    {
+        get => UiPreferences.Instance.Translate(_formError);
+        private set
+        {
+            if (SetField(ref _formError, value))
+                OnPropertyChanged(nameof(TitleValidationMessage));
+        }
+    }
+    public string NewSubtaskTitle
+    {
+        get => _newSubtaskTitle;
+        set
+        {
+            if (SetField(ref _newSubtaskTitle, value))
+                OnPropertyChanged(nameof(CanAddSubtask));
+        }
+    }
+    public bool CanAddSubtask => !string.IsNullOrWhiteSpace(NewSubtaskTitle) && NewSubtaskTitle.Trim().Length <= 255;
+    public string NewTitle
+    {
+        get => _newTitle;
+        set
+        {
+            if (!SetField(ref _newTitle, value)) return;
+            OnPropertyChanged(nameof(CanCreate));
+            OnPropertyChanged(nameof(TitleValidationMessage));
+            if (CanCreate && !string.IsNullOrEmpty(FormError))
+                FormError = string.Empty;
+        }
+    }
     public string NewDescription { get => _newDescription; set => SetField(ref _newDescription, value); }
     public DateTime NewDueDate
     {
@@ -226,17 +371,71 @@ public class TasksViewModel : PageViewModelBase
     /// <summary>«22 ВЕР 2026 · 18:00».</summary>
     public string NewDueText => $"{Uk.ShortUpper(NewDueDate, withYear: true)} · {NewDueHour:00}:{NewDueMinute:00}";
 
-    public string NewProject { get => _newProject; set => SetField(ref _newProject, value); }
+    public string NewProject
+    {
+        get => _newProject == NoProject ? UiPreferences.Instance.Translate(NoProject) : _newProject;
+        set
+        {
+            var source = value == UiPreferences.Instance.Translate(NoProject) ? NoProject : value;
+            SetField(ref _newProject, source);
+        }
+    }
     public PriorityOption NewPriority { get => _newPriority; set { if (value != null) SetField(ref _newPriority, value); } }
     public EstimateOption NewEstimate { get => _newEstimate; set { if (value != null) SetField(ref _newEstimate, value); } }
     public bool CanCreate => NewTitle.Trim().Length is >= 1 and <= 255;
+    public string TitleValidationMessage => CanCreate
+        ? FormError
+        : UiPreferences.Instance.Translate(string.IsNullOrWhiteSpace(NewTitle)
+            ? "Введіть назву завдання."
+            : "Назва не може бути довшою за 255 символів.");
 
     public ICommand CloseAddCommand { get; }
     public ICommand SelectPriorityCommand { get; }
     public ICommand CreateTaskCommand { get; }
+    public ICommand EditTaskCommand { get; }
+    public ICommand OpenProjectManagerCommand { get; }
+    public ICommand OpenTagManagerCommand { get; }
+    public ICommand CloseProjectManagerCommand { get; }
+    public ICommand CloseTagManagerCommand { get; }
+    public ICommand NewProjectCommand { get; }
+    public ICommand SaveProjectCommand { get; }
+    public ICommand DeleteProjectCommand { get; }
+    public ICommand NewTagCommand { get; }
+    public ICommand SaveTagCommand { get; }
+    public ICommand DeleteTagCommand { get; }
+    public ICommand ResetFiltersCommand { get; }
+    public ICommand AddSubtaskCommand { get; }
+    public ICommand RemoveSubtaskCommand { get; }
+    public ICommand MoveSubtaskUpCommand { get; }
+    public ICommand MoveSubtaskDownCommand { get; }
     public ICommand ToggleAllCommand { get; }
 
     protected override void OnSearchChanged() => RefreshView();
+
+    protected override void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(StatusFilters));
+        OnPropertyChanged(nameof(PriorityFilters));
+        OnPropertyChanged(nameof(SortOptions));
+        OnPropertyChanged(nameof(SelectedStatus));
+        OnPropertyChanged(nameof(SelectedProject));
+        OnPropertyChanged(nameof(SelectedPriority));
+        OnPropertyChanged(nameof(SelectedSort));
+        OnPropertyChanged(nameof(NewProject));
+        OnPropertyChanged(nameof(FormTitle));
+        OnPropertyChanged(nameof(SubmitButtonText));
+        OnPropertyChanged(nameof(TitleValidationMessage));
+        foreach (var priority in Priorities)
+            priority.RefreshLanguage();
+        foreach (var estimate in EstimateOptions)
+            estimate.RefreshLanguage();
+
+        if (ProjectFilters.Count > 0)
+            ProjectFilters[0] = UiPreferences.Instance.Translate("Усі проєкти");
+        if (ProjectChoices.Count > 0)
+            ProjectChoices[0] = UiPreferences.Instance.Translate(NoProject);
+        RefreshView();
+    }
 
     private void RefreshView()
     {
@@ -248,11 +447,13 @@ public class TasksViewModel : PageViewModelBase
     {
         var r = (TaskRow)o;
         if (!string.IsNullOrWhiteSpace(SearchText) &&
-            !($"{r.Title} {r.Project} {r.Description}".Contains(SearchText, StringComparison.OrdinalIgnoreCase))) return false;
+            !r.Title.Contains(SearchText, StringComparison.OrdinalIgnoreCase)) return false;
         if (SelectedStatus != StatusFilters[0] && r.StatusText != SelectedStatus) return false;
         if (SelectedProject != ProjectFilters[0] && r.Project != SelectedProject) return false;
         if (SelectedPriority != PriorityFilters[0] &&
             !r.PriorityLabel.Equals(SelectedPriority, StringComparison.OrdinalIgnoreCase)) return false;
+        var selectedTagIds = FilterTagOptions.Where(option => option.IsSelected).Select(option => option.Id).ToArray();
+        if (selectedTagIds.Length > 0 && !r.TagIds.Intersect(selectedTagIds).Any()) return false;
         return true;
     }
 
@@ -262,10 +463,11 @@ public class TasksViewModel : PageViewModelBase
         {
             View.SortDescriptions.Clear();
             View.SortDescriptions.Add(new SortDescription(nameof(TaskRow.IsDone), ListSortDirection.Ascending));
-            var key = SelectedSort switch
+            var key = _selSort switch
             {
                 "Назвою" => nameof(TaskRow.Title),
                 "Пріоритетом" => nameof(TaskRow.PriorityRank),
+                "Датою створення" => nameof(TaskRow.CreatedAt),
                 _ => nameof(TaskRow.DueDate)
             };
             View.SortDescriptions.Add(new SortDescription(key, ListSortDirection.Ascending));
@@ -283,6 +485,14 @@ public class TasksViewModel : PageViewModelBase
 
     private void OpenAdd()
     {
+        _editingTask = null;
+        OnPropertyChanged(nameof(IsEditing));
+        OnPropertyChanged(nameof(FormTitle));
+        OnPropertyChanged(nameof(SubmitButtonText));
+        FormError = string.Empty;
+        SetTaskTagSelection([]);
+        ChecklistItems.Clear();
+        NewSubtaskTitle = string.Empty;
         NewTitle = "";
         NewDescription = "";
         // За замовчуванням — сьогодні о 18:00 (якщо вже пізніше — наступна повна година).
@@ -299,20 +509,303 @@ public class TasksViewModel : PageViewModelBase
         IsAddOpen = true;
     }
 
+    private void OpenEdit(TaskRow row)
+    {
+        _editingTask = row;
+        OnPropertyChanged(nameof(IsEditing));
+        OnPropertyChanged(nameof(FormTitle));
+        OnPropertyChanged(nameof(SubmitButtonText));
+        FormError = string.Empty;
+        NewTitle = row.Title;
+        NewDescription = row.Description;
+        NewDueDate = row.DueDate.Date;
+        NewDueHour = row.DueDate.Hour;
+        NewDueMinute = row.DueDate.Minute;
+        NewProject = string.IsNullOrWhiteSpace(row.Project) ? NoProject : row.Project;
+        NewPriority = Priorities.First(option => option.Key == row.PriorityKey);
+        SetTaskTagSelection(row.TagIds);
+        ChecklistItems.Clear();
+        foreach (var subtask in row.Subtasks)
+            ChecklistItems.Add(new EditableSubtask(subtask));
+        NewSubtaskTitle = string.Empty;
+        NewEstimate = EstimateOptions.FirstOrDefault(option => option.Minutes == row.EstimatedMinutes)
+            ?? new EstimateOption(row.EstimatedMinutes ?? 60);
+        IsDatePickerOpen = false;
+        IsAddOpen = true;
+    }
+
+    public void OpenEditTask(TaskRow row) => OpenEdit(row);
+
     private void Create()
     {
-        if (!CanCreate) return;
-        AddRow(new TaskRow
+        if (!CanCreate)
         {
-            Title = NewTitle.Trim(),
-            Description = NewDescription.Trim(),
-            Project = NewProject == NoProject ? string.Empty : NewProject,
-            PriorityKey = NewPriority.Key,
-            DueDate = NewDueDateTime,
-            EstimatedMinutes = NewEstimate.Minutes
-        });
+            FormError = string.IsNullOrWhiteSpace(NewTitle)
+                ? "Введіть назву завдання."
+                : "Назва не може бути довшою за 255 символів.";
+            return;
+        }
+
+        FormError = string.Empty;
+        if (_editingTask is { } task)
+        {
+            task.Title = NewTitle.Trim();
+            task.Description = NewDescription.Trim();
+            task.Project = _newProject == NoProject ? string.Empty : _newProject;
+            task.PriorityKey = NewPriority.Key;
+            task.DueDate = NewDueDateTime;
+            task.EstimatedMinutes = NewEstimate.Minutes;
+            task.TagIds = TaskTagOptions.Where(option => option.IsSelected).Select(option => option.Id).ToArray();
+            task.Subtasks = ChecklistItems.Select(item => item.ToDto()).ToArray();
+        }
+        else
+        {
+            AddRow(new TaskRow
+            {
+                Title = NewTitle.Trim(),
+                Description = NewDescription.Trim(),
+                Project = NewProject == UiPreferences.Instance.Translate(NoProject) ? string.Empty : NewProject,
+                PriorityKey = NewPriority.Key,
+                DueDate = NewDueDateTime,
+                CreatedAt = DateTime.Now,
+                EstimatedMinutes = NewEstimate.Minutes,
+                TagIds = TaskTagOptions.Where(option => option.IsSelected).Select(option => option.Id).ToArray(),
+                Subtasks = ChecklistItems.Select(item => item.ToDto()).ToArray()
+            });
+        }
+
         IsDatePickerOpen = false;
         IsAddOpen = false;
     }
 
+    private void PrepareEditCommands()
+    {
+        foreach (var row in Rows)
+            row.EditCommand = EditTaskCommand;
+    }
+
+    private async Task LoadCatalogAsync()
+    {
+        try
+        {
+            var projects = await _catalog.GetProjectsAsync();
+            var tags = await _catalog.GetTagsAsync();
+            Projects.Clear();
+            ProjectFilters.Clear();
+            ProjectFilters.Add(UiPreferences.Instance.Translate("Усі проєкти"));
+            ProjectChoices.Clear();
+            ProjectChoices.Add(UiPreferences.Instance.Translate(NoProject));
+            ProjectRecords.Clear();
+            foreach (var project in projects)
+            {
+                Projects.Add(project.Name);
+                ProjectFilters.Add(project.Name);
+                ProjectChoices.Add(project.Name);
+                ProjectRecords.Add(project);
+            }
+            ReplaceTags(tags);
+            RefreshView();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                MessageBox.Show($"{UiPreferences.Instance.Translate("Не вдалося завантажити проєкти й теги")}:\n{ex.Message}",
+                    "FocusLab", MessageBoxButton.OK, MessageBoxImage.Error));
+        }
+    }
+
+    private void ReplaceTags(IEnumerable<TagDto> tags)
+    {
+        TagRecords.Clear();
+        TaskTagOptions.Clear();
+        FilterTagOptions.Clear();
+        foreach (var tag in tags)
+        {
+            TagRecords.Add(tag);
+            TaskTagOptions.Add(new TagOption(tag.Id, tag.Name, tag.Color));
+            var filterOption = new TagOption(tag.Id, tag.Name, tag.Color);
+            filterOption.PropertyChanged += (_, _) => RefreshView();
+            FilterTagOptions.Add(filterOption);
+        }
+    }
+
+    private void SetTaskTagSelection(IEnumerable<int> selectedIds)
+    {
+        var selected = selectedIds.ToHashSet();
+        foreach (var option in TaskTagOptions)
+            option.IsSelected = selected.Contains(option.Id);
+    }
+
+    private async Task OpenProjectManagerAsync()
+    {
+        await LoadCatalogAsync();
+        CatalogError = string.Empty;
+        IsProjectManagerOpen = true;
+    }
+
+    private async Task OpenTagManagerAsync()
+    {
+        await LoadCatalogAsync();
+        CatalogError = string.Empty;
+        IsTagManagerOpen = true;
+    }
+
+    private void BeginNewProject()
+    {
+        SelectedProjectRecord = null;
+        CatalogName = string.Empty;
+        CatalogColor = ColorOptions[0];
+        CatalogError = string.Empty;
+    }
+
+    private void BeginNewTag()
+    {
+        SelectedTagRecord = null;
+        CatalogName = string.Empty;
+        CatalogColor = ColorOptions[0];
+        CatalogError = string.Empty;
+    }
+
+    private async Task SaveProjectAsync()
+    {
+        try
+        {
+            var oldName = SelectedProjectRecord?.Name;
+            var saved = await _catalog.SaveProjectAsync(
+                new ProjectDto(SelectedProjectRecord?.Id ?? 0, CatalogName, CatalogColor));
+            foreach (var row in Rows.Where(row => oldName is not null && row.Project == oldName))
+                row.Project = saved.Name;
+            if (SelectedProject == oldName)
+                SelectedProject = saved.Name;
+            await LoadCatalogAsync();
+            SelectedProjectRecord = ProjectRecords.First(item => item.Id == saved.Id);
+            CatalogError = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            CatalogError = ex.Message;
+        }
+    }
+
+    private async Task DeleteProjectAsync()
+    {
+        if (SelectedProjectRecord is not { } project) return;
+        if (MessageBox.Show(string.Format(UiPreferences.Instance.Translate(
+                    "Видалити проєкт «{0}»? Завдання залишаться без проєкту."), project.Name),
+                UiPreferences.Instance.Translate("Підтвердження видалення"),
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            await _catalog.DeleteProjectAsync(project.Id);
+            foreach (var row in Rows.Where(row => row.Project == project.Name))
+                row.Project = string.Empty;
+            SelectedProject = ProjectFilters[0];
+            await LoadCatalogAsync();
+            BeginNewProject();
+        }
+        catch (Exception ex)
+        {
+            CatalogError = ex.Message;
+        }
+    }
+
+    private async Task SaveTagAsync()
+    {
+        try
+        {
+            var saved = await _catalog.SaveTagAsync(new TagDto(SelectedTagRecord?.Id ?? 0, CatalogName, CatalogColor));
+            await LoadCatalogAsync();
+            SelectedTagRecord = TagRecords.First(item => item.Id == saved.Id);
+            CatalogError = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            CatalogError = ex.Message;
+        }
+    }
+
+    private async Task DeleteTagAsync()
+    {
+        if (SelectedTagRecord is not { } tag) return;
+        if (MessageBox.Show(string.Format(UiPreferences.Instance.Translate("Видалити тег «{0}»?"), tag.Name),
+                UiPreferences.Instance.Translate("Підтвердження видалення"),
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            await _catalog.DeleteTagAsync(tag.Id);
+            foreach (var row in Rows.Where(row => row.TagIds.Contains(tag.Id)))
+                row.TagIds = row.TagIds.Where(id => id != tag.Id).ToArray();
+            await LoadCatalogAsync();
+            BeginNewTag();
+        }
+        catch (Exception ex)
+        {
+            CatalogError = ex.Message;
+        }
+    }
+
+    private void ResetFilters()
+    {
+        SearchText = string.Empty;
+        SelectedStatus = StatusFilters[0];
+        SelectedProject = ProjectFilters[0];
+        SelectedPriority = PriorityFilters[0];
+        foreach (var option in FilterTagOptions)
+            option.IsSelected = false;
+        RefreshView();
+    }
+
+    private void AddSubtask()
+    {
+        if (!CanAddSubtask) return;
+        ChecklistItems.Add(new EditableSubtask(Guid.NewGuid().ToString("N"), NewSubtaskTitle.Trim(), false));
+        NewSubtaskTitle = string.Empty;
+    }
+
+    private void MoveSubtask(EditableSubtask? item, int offset)
+    {
+        if (item is null) return;
+        var index = ChecklistItems.IndexOf(item);
+        var target = index + offset;
+        if (index < 0 || target < 0 || target >= ChecklistItems.Count) return;
+        ChecklistItems.Move(index, target);
+    }
+
+    private static string ResolveOption(string value, IEnumerable<string> options)
+        => options.FirstOrDefault(option => UiPreferences.Instance.Translate(option) == value) ?? value;
+
+}
+
+public sealed class TagOption(int id, string name, string color) : BoardBase
+{
+    private bool _isSelected;
+
+    public int Id { get; } = id;
+    public string Name { get; } = name;
+    public string Color { get; } = color;
+    public bool IsSelected { get => _isSelected; set => SetField(ref _isSelected, value); }
+}
+
+public sealed class EditableSubtask : BoardBase
+{
+    private string _title;
+    private bool _isDone;
+
+    public EditableSubtask(TaskSubtaskDto item) : this(item.Id, item.Title, item.IsDone) { }
+
+    public EditableSubtask(string id, string title, bool isDone)
+    {
+        Id = id;
+        _title = title;
+        _isDone = isDone;
+    }
+
+    public string Id { get; }
+    public string Title { get => _title; set => SetField(ref _title, value); }
+    public bool IsDone { get => _isDone; set => SetField(ref _isDone, value); }
+    public TaskSubtaskDto ToDto() => new(Id, Title, IsDone);
 }

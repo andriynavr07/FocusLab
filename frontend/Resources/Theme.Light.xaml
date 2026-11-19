@@ -6,6 +6,8 @@
     <SolidColorBrush x:Key="FlLine" Color="#DCE2F0"/>
     <SolidColorBrush x:Key="FlText" Color="#121A2F"/>
     <SolidColorBrush x:Key="FlMuted" Color="#6A7592"/>
+    <SolidColorBrush x:Key="FlStatusText" Color="{StaticResource SecondaryTextColor}"/>
+    <SolidColorBrush x:Key="FlColumnHeader" Color="{StaticResource SecondaryTextColor}"/>
     <SolidColorBrush x:Key="FlAccent" Color="#3B6EF5"/>
     <SolidColorBrush x:Key="FlAccentSoft" Color="#E2EAFF"/>
     <SolidColorBrush x:Key="FlDanger" Color="#DC3C4A"/>

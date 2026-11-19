@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using Frontend.Services;
@@ -6,8 +7,6 @@ namespace Frontend.ViewModels;
 
 public abstract class PageViewModelBase : BoardBase
 {
-    private static bool _isLight;
-    private static bool _isUa = true;
     private string _searchText = "";
     private bool _isNotificationsOpen;
 
@@ -19,27 +18,26 @@ public abstract class PageViewModelBase : BoardBase
     {
         // Ім'я, пошта та серійний період змінюються з різних місць — оновлюємо верхню панель.
         WeakEventManager<UserSession, EventArgs>.AddHandler(UserSession.Instance, nameof(UserSession.Changed), OnSessionChanged);
-        ToggleThemeCommand = new RelayCommand(_ => SetTheme(!_isLight));
-        ToggleLanguageCommand = new RelayCommand(_ => { _isUa = !_isUa; OnPropertyChanged(nameof(LanguageButtonText)); });
+        PropertyChangedEventManager.AddHandler(UiPreferences.Instance, OnPreferencesChanged, string.Empty);
+        ToggleThemeCommand = new RelayCommand(_ => UiPreferences.Instance.ToggleTheme());
+        ToggleLanguageCommand = new RelayCommand(_ => UiPreferences.Instance.ToggleLanguage());
         OpenNotificationsCommand = new RelayCommand(_ => IsNotificationsOpen = true);
         OpenNewTaskCommand = new RelayCommand(_ => RequestNewTask());
     }
 
-    protected static bool IsLightTheme => _isLight;
+    protected static bool IsLightTheme => UiPreferences.Instance.IsLightTheme;
 
     protected void SetTheme(bool light)
     {
-        _isLight = light;
-        ThemeManager.Apply(light);
-        OnPropertyChanged(nameof(ThemeButtonText));
-        OnThemeChanged();
+        if (UiPreferences.Instance.IsLightTheme != light)
+            UiPreferences.Instance.SetTheme(light);
     }
 
     protected virtual void OnThemeChanged() { }
     protected virtual void OnSearchChanged() { }
 
-    public string ThemeButtonText => _isLight ? "Dark" : "Light";
-    public string LanguageButtonText => _isUa ? "EN" : "UA";
+    public string ThemeButtonText => UiPreferences.Instance.ThemeButtonText;
+    public string LanguageButtonText => UiPreferences.Instance.LanguageButtonText;
     public string StreakText => UserSession.Instance.StreakText;
     public string AvatarInitials => UserSession.Instance.Initials;
 
@@ -50,7 +48,23 @@ public abstract class PageViewModelBase : BoardBase
         OnUserSessionChanged();
     }
 
+    private void OnPreferencesChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(UiPreferences.ThemeButtonText) or nameof(UiPreferences.IsLightTheme))
+        {
+            OnPropertyChanged(nameof(ThemeButtonText));
+            OnThemeChanged();
+        }
+
+        if (e.PropertyName is nameof(UiPreferences.LanguageButtonText) or nameof(UiPreferences.Language))
+        {
+            OnPropertyChanged(nameof(LanguageButtonText));
+            OnLanguageChanged();
+        }
+    }
+
     protected virtual void OnUserSessionChanged() { }
+    protected virtual void OnLanguageChanged() { }
 
     public string SearchText
     {

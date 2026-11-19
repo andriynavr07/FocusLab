@@ -9,21 +9,34 @@ using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
-public class TimelineEntry
+public class TimelineEntry : BoardBase
 {
-    public string Text { get; init; } = "";
+    public DateTime StartedAt { get; init; }
+    public int DurationMinutes { get; init; }
+    public string Text => UiPreferences.Instance.Language == "English"
+        ? $"{StartedAt:HH:mm} - Work ({DurationMinutes} min)"
+        : $"{StartedAt:HH:mm} - Робота ({DurationMinutes}м)";
     public string State { get; init; } = "Pending"; // Done | Active | Pending
+    public void RefreshLanguage() => OnPropertyChanged(nameof(Text));
 }
 
 public class PresetOption : BoardBase
 {
     private bool _isSelected;
-    public string Name { get; init; } = "";
+    private string _name = "";
+    public string Name { get => UiPreferences.Instance.Translate(_name); init => _name = value; }
     public int Work { get; init; }
     public int Break { get; init; }
-    public string Subtitle => $"{Work} хв / {Break} хв";
+    public string Subtitle => $"{Uk.Duration(Work)} / {Uk.Duration(Break)}";
     public bool IsSelected { get => _isSelected; set => SetField(ref _isSelected, value); }
+    public void RefreshLanguage()
+    {
+        OnPropertyChanged(nameof(Name));
+        OnPropertyChanged(nameof(Subtitle));
+    }
 }
+
+public sealed record FocusTaskOption(int? Id, string Title);
 
 /// <summary>
 /// Адаптер між UI і IFocusTimerService. Уся логіка відліку, перерв, запису сесій і сповіщень —
@@ -40,10 +53,14 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
     private readonly Dispatcher _dispatcher;
     private readonly DispatcherTimer _uiTimer;
     private readonly DispatcherTimer _saveDebounce;
+    private readonly TaskBoardStore _taskStore;
 
     private double _work, _short, _long;
     private int _sessionsPerRound;
     private bool _autoStart;
+    private bool _saveInterruptedSessions;
+    private FocusTaskOption? _selectedTaskOption;
+    private bool _isFocusMode;
     private string _selectedNoise = "Звуки природи";
 
     private string _timeText = "";
@@ -64,10 +81,11 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
     private bool _saveErrorShown;
     private bool _disposed;
 
-    public TimerViewModel(IFocusTimerService timer, IFocusSettingsProvider settings)
+    public TimerViewModel(IFocusTimerService timer, IFocusSettingsProvider settings, TaskBoardStore taskStore)
     {
         _timer = timer;
         _settings = settings;
+        _taskStore = taskStore;
         _dispatcher = Dispatcher.CurrentDispatcher; // VM створюється в UI-потоці
 
         var s = _settings.Current;
@@ -76,6 +94,7 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         _long = s.LongBreakMinutes;
         _sessionsPerRound = s.SessionsBeforeLongBreak;
         _autoStart = s.AutoStartNext;
+        _saveInterruptedSessions = s.SaveInterruptedSessions;
 
         Presets = new ObservableCollection<PresetOption>
         {
@@ -94,6 +113,10 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         // «Пропустити»: під час перерви — одразу до наступної сесії; під час роботи — перервати інтервал.
         SkipCommand = new RelayCommand(async _ => await SkipAsync());
         SelectPresetCommand = new RelayCommand(p => { if (p is PresetOption o) ApplyPreset(o); });
+        ToggleFocusModeCommand = new RelayCommand(_ => IsFocusMode = !IsFocusMode);
+        ExitFocusModeCommand = new RelayCommand(_ => IsFocusMode = false);
+        _taskStore.Changed += OnTasksChanged;
+        RefreshTasks();
 
         _saveDebounce = new DispatcherTimer(DispatcherPriority.Background, _dispatcher)
         {
@@ -107,7 +130,7 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
 
         _uiTimer = new DispatcherTimer(DispatcherPriority.Normal, _dispatcher)
         {
-            Interval = TimeSpan.FromMilliseconds(250)
+            Interval = TimeSpan.FromSeconds(1)
         };
         _uiTimer.Tick += (_, _) => Refresh();
         _uiTimer.Start();
@@ -120,13 +143,17 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
 
     public ObservableCollection<PresetOption> Presets { get; }
     public ObservableCollection<TimelineEntry> Timeline { get; }
-    public string[] NoiseOptions { get; } = { "Звуки природи", "Білий шум", "Тиша" };
+    public ObservableCollection<FocusTaskOption> TaskOptions { get; } = [];
+    public string[] NoiseOptions => new[] { "Звуки природи", "Білий шум", "Тиша" }
+        .Select(UiPreferences.Instance.Translate).ToArray();
 
     public ICommand ToggleCommand { get; }
     public ICommand ResetCommand { get; }
     public ICommand PauseCommand { get; }
     public ICommand SkipCommand { get; }
     public ICommand SelectPresetCommand { get; }
+    public ICommand ToggleFocusModeCommand { get; }
+    public ICommand ExitFocusModeCommand { get; }
 
     // ----- налаштування (зберігаються в settings.json із затримкою 400 мс) -----
     public double WorkMinutes
@@ -163,11 +190,50 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         }
     }
 
-    public string SelectedNoise { get => _selectedNoise; set { if (value != null) SetField(ref _selectedNoise, value); } }
+    public bool SaveInterruptedSessions
+    {
+        get => _saveInterruptedSessions;
+        set { if (SetField(ref _saveInterruptedSessions, value)) ScheduleSave(); }
+    }
 
-    public string WorkText => $"{(int)_work} хв";
-    public string ShortText => $"{(int)_short} хв";
-    public string LongText => $"{(int)_long} хв";
+    public FocusTaskOption? SelectedTaskOption
+    {
+        get => _selectedTaskOption;
+        set
+        {
+            if (!SetField(ref _selectedTaskOption, value)) return;
+            if (_timer.Status == TimerStatus.Idle)
+                _timer.SelectTask(value?.Id);
+            else
+                RefreshTasks();
+            OnPropertyChanged(nameof(CurrentTaskTitle));
+        }
+    }
+
+    public string CurrentTaskTitle =>
+        TaskOptions.FirstOrDefault(option => option.Id == _timer.TaskId)?.Title
+        ?? UiPreferences.Instance.Translate("Без задачі");
+    public bool IsFocusMode
+    {
+        get => _isFocusMode;
+        set => SetField(ref _isFocusMode, value);
+    }
+
+    public string SelectedNoise
+    {
+        get => UiPreferences.Instance.Translate(_selectedNoise);
+        set
+        {
+            if (value is null) return;
+            var source = new[] { "Звуки природи", "Білий шум", "Тиша" }
+                .FirstOrDefault(option => UiPreferences.Instance.Translate(option) == value) ?? value;
+            SetField(ref _selectedNoise, source);
+        }
+    }
+
+    public string WorkText => Uk.Duration((int)_work);
+    public string ShortText => Uk.Duration((int)_short);
+    public string LongText => Uk.Duration((int)_long);
 
     // ----- відображення -----
     public bool IsRunning { get => _isRunning; private set => SetField(ref _isRunning, value); }
@@ -178,6 +244,30 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
     public string StartPauseGlyph { get => _startPauseGlyph; private set => SetField(ref _startPauseGlyph, value); }
     public string GoalText { get => _goalText; private set => SetField(ref _goalText, value); }
     public double GoalPercent { get => _goalPercent; private set => SetField(ref _goalPercent, value); }
+
+    protected override void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(NoiseOptions));
+        OnPropertyChanged(nameof(SelectedNoise));
+        OnPropertyChanged(nameof(WorkText));
+        OnPropertyChanged(nameof(ShortText));
+        OnPropertyChanged(nameof(LongText));
+        OnPropertyChanged(nameof(CurrentTaskTitle));
+        if (TaskOptions.Count > 0)
+        {
+            TaskOptions[0] = new FocusTaskOption(null, UiPreferences.Instance.Translate("Без задачі"));
+            if (_selectedTaskOption?.Id is null)
+            {
+                _selectedTaskOption = TaskOptions[0];
+                OnPropertyChanged(nameof(SelectedTaskOption));
+            }
+        }
+        foreach (var preset in Presets)
+            preset.RefreshLanguage();
+        foreach (var entry in Timeline)
+            entry.RefreshLanguage();
+        Refresh();
+    }
 
     // ═════════ Керування ═════════
 
@@ -192,14 +282,14 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
 
         if (row.Id <= 0)
         {
-            MessageBox.Show("Задача ще зберігається в базі даних. Спробуйте за мить.",
+            MessageBox.Show(UiPreferences.Instance.Translate("Задача ще зберігається в базі даних. Спробуйте за мить."),
                 "FocusLab", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
         if (_timer.HasActiveSession && _timer.TaskId != row.Id)
         {
-            MessageBox.Show("Таймер уже працює. Зупиніть його, щоб почати фокус на іншій задачі.",
+            MessageBox.Show(UiPreferences.Instance.Translate("Таймер уже працює. Зупиніть його, щоб почати фокус на іншій задачі."),
                 "FocusLab", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
@@ -207,6 +297,8 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         switch (_timer.Status)
         {
             case TimerStatus.Idle:
+                SelectedTaskOption = TaskOptions.FirstOrDefault(option => option.Id == row.Id)
+                    ?? new FocusTaskOption(row.Id, row.Title);
                 if (_timer.Phase != TimerPhase.Focus) _timer.SkipBreak(); // з паузи між фазами — одразу до роботи
                 _timer.Start(row.Id);
                 break;
@@ -221,7 +313,7 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
     {
         switch (_timer.Status)
         {
-            case TimerStatus.Idle: _timer.Start(); break;
+            case TimerStatus.Idle: _timer.Start(SelectedTaskOption?.Id); break;
             case TimerStatus.Running: _timer.Pause(); break;
             case TimerStatus.Paused: _timer.Resume(); break;
         }
@@ -236,7 +328,7 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Помилка зупинки таймера: " + ex.Message,
+            MessageBox.Show(UiPreferences.Instance.Translate("Помилка зупинки таймера") + ": " + ex.Message,
                 "FocusLab", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         Refresh();
@@ -266,6 +358,29 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
             p.IsSelected = p.Work == (int)_work && p.Break == (int)_short;
     }
 
+    private void OnTasksChanged(object? sender, EventArgs e)
+        => _dispatcher.InvokeAsync(RefreshTasks);
+
+    private void RefreshTasks()
+    {
+        if (_disposed) return;
+
+        var selectedId = _timer.TaskId ?? _selectedTaskOption?.Id;
+        var selectedTitle = _selectedTaskOption?.Title;
+        TaskOptions.Clear();
+        TaskOptions.Add(new FocusTaskOption(null, "Без задачі"));
+        foreach (var row in _taskStore.Rows.Where(row => row.Id > 0))
+            TaskOptions.Add(new FocusTaskOption(row.Id, row.Title));
+
+        if (selectedId is int taskId && TaskOptions.All(option => option.Id != taskId)
+            && selectedTitle is not null)
+            TaskOptions.Add(new FocusTaskOption(taskId, selectedTitle));
+
+        _selectedTaskOption = TaskOptions.FirstOrDefault(option => option.Id == selectedId) ?? TaskOptions[0];
+        OnPropertyChanged(nameof(SelectedTaskOption));
+        OnPropertyChanged(nameof(CurrentTaskTitle));
+    }
+
     // ═════════ Налаштування ═════════
 
     private void ScheduleSave()
@@ -285,17 +400,19 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
                 ShortBreakMinutes = (int)Math.Round(_short),
                 LongBreakMinutes = (int)Math.Round(_long),
                 SessionsBeforeLongBreak = _sessionsPerRound,
-                AutoStartNext = _autoStart
+                AutoStartNext = _autoStart,
+                SaveInterruptedSessions = _saveInterruptedSessions
             });
         }
         catch (Exception ex)
         {
             // У пам'яті налаштування вже діють; не вдалося лише записати файл.
-            MessageBox.Show("Налаштування таймера не збережено у файл: " + ex.Message,
+            MessageBox.Show(UiPreferences.Instance.Translate("Налаштування таймера не збережено у файл") + ": " + ex.Message,
                 "FocusLab", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         _timer.ApplySettings();
+        OnPropertyChanged(nameof(CurrentTaskTitle));
         Refresh();
     }
 
@@ -309,7 +426,8 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         {
             Timeline.Add(new TimelineEntry
             {
-                Text = $"{DateTime.Now:HH:mm} - Робота ({(int)Math.Round(_lastFocusDuration.TotalMinutes)}м)",
+                StartedAt = DateTime.Now,
+                DurationMinutes = (int)Math.Round(_lastFocusDuration.TotalMinutes),
                 State = "Done"
             });
             FocusSessionFinished?.Invoke(this, EventArgs.Empty);
@@ -322,8 +440,8 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         if (_saveErrorShown) return;
         _saveErrorShown = true;
         MessageBox.Show(
-            "Не вдалося зберегти фокус-сесію в базу даних. Дані не втрачено в пам'яті — " +
-            "застосунок повторить спробу після наступної успішної операції.",
+            UiPreferences.Instance.Translate(
+                "Не вдалося зберегти фокус-сесію в базу даних. Дані не втрачено в пам'яті — застосунок повторить спробу після наступної успішної операції."),
             "FocusLab", MessageBoxButton.OK, MessageBoxImage.Warning);
     });
 
@@ -342,15 +460,23 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         TimeText = $"{seconds / 60:00}:{seconds % 60:00}";
         Progress = duration <= TimeSpan.Zero ? 0 : Math.Clamp(remaining.TotalSeconds / duration.TotalSeconds, 0, 1);
 
-        SessionText = phase switch
-        {
-            TimerPhase.Focus => $"СЕСІЯ {_timer.CurrentSessionNumber} З {_timer.SessionsPerCycle}",
-            TimerPhase.ShortBreak => "КОРОТКА ПЕРЕРВА",
-            _ => "ДОВГА ПЕРЕРВА"
-        };
+        SessionText = UiPreferences.Instance.Language == "English"
+            ? phase switch
+            {
+                TimerPhase.Focus => $"SESSION {_timer.CurrentSessionNumber} OF {_timer.SessionsPerCycle}",
+                TimerPhase.ShortBreak => "SHORT BREAK",
+                _ => "LONG BREAK"
+            }
+            : phase switch
+            {
+                TimerPhase.Focus => $"СЕСІЯ {_timer.CurrentSessionNumber} З {_timer.SessionsPerCycle}",
+                TimerPhase.ShortBreak => "КОРОТКА ПЕРЕРВА",
+                _ => "ДОВГА ПЕРЕРВА"
+            };
+        OnPropertyChanged(nameof(CurrentTaskTitle));
 
         IsRunning = status == TimerStatus.Running;
-        StartPauseText = IsRunning ? "ПАУЗА" : "ПОЧАТИ";
+        StartPauseText = UiPreferences.Instance.Translate(IsRunning ? "ПАУЗА" : "ПОЧАТИ");
         StartPauseGlyph = IsRunning ? "\uE769" : "\uE768";
 
         TrackFocusedTime(status, phase, remaining, duration);
@@ -376,7 +502,9 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         _wasInFocus = inFocus;
 
         var total = _focusedBaseSeconds + (inFocus ? _lastFocusElapsed : 0);
-        GoalText = $"{(total / 3600).ToString("0.0", CultureInfo.InvariantCulture)} з {GoalHours:0} годин";
+        GoalText = UiPreferences.Instance.Language == "English"
+            ? $"{(total / 3600).ToString("0.0", CultureInfo.InvariantCulture)} of {GoalHours:0} hours"
+            : $"{(total / 3600).ToString("0.0", CultureInfo.InvariantCulture)} з {GoalHours:0} годин";
         GoalPercent = Math.Min(100, total / 3600 / GoalHours * 100);
     }
 
@@ -392,5 +520,6 @@ public sealed class TimerViewModel : PageViewModelBase, IDisposable
         _timer.StateChanged -= OnStateChanged;
         _timer.IntervalCompleted -= OnIntervalCompleted;
         _timer.ErrorOccurred -= OnError;
+        _taskStore.Changed -= OnTasksChanged;
     }
 }

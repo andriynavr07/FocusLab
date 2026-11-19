@@ -20,7 +20,7 @@ public sealed class TaskBoardStore
     [
         nameof(TaskRow.Title), nameof(TaskRow.Project), nameof(TaskRow.PriorityKey),
         nameof(TaskRow.Description), nameof(TaskRow.DueDate), nameof(TaskRow.Status),
-        nameof(TaskRow.EstimatedMinutes)
+        nameof(TaskRow.EstimatedMinutes), nameof(TaskRow.TagIds), nameof(TaskRow.Subtasks)
     ];
 
     private readonly ITaskService _service;
@@ -88,14 +88,23 @@ public sealed class TaskBoardStore
         });
     }
 
-    public void Remove(TaskRow row)
+    public bool Remove(TaskRow row)
     {
+        var result = MessageBox.Show(
+            string.Format(UiPreferences.Instance.Translate("Видалити завдання «{0}»?"), row.Title),
+            UiPreferences.Instance.Translate("Підтвердження видалення"),
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes)
+            return false;
+
         Rows.Remove(row);
         Enqueue(async () =>
         {
             if (row.Id != 0)
                 await _service.DeleteAsync(row.Id);
         });
+        return true;
     }
 
     public void Prepare(TaskRow row)
@@ -141,6 +150,9 @@ public sealed class TaskBoardStore
     private static TaskRow FromDto(TaskDto dto) => new()
     {
         Id = dto.Id,
+        CreatedAt = dto.CreatedAt,
+        TagIds = dto.TagIds.ToArray(),
+        Subtasks = dto.Subtasks.ToArray(),
         Title = dto.Title,
         Description = dto.Description ?? string.Empty,
         Project = dto.Project ?? string.Empty,
@@ -174,7 +186,9 @@ public sealed class TaskBoardStore
         },
         EstimatedMinutes = row.EstimatedMinutes,
         Status = ParseStatus(row.Status),
-        Deadline = DateTime.SpecifyKind(row.DueDate, DateTimeKind.Local)
+        Deadline = DateTime.SpecifyKind(row.DueDate, DateTimeKind.Local),
+        TagIds = row.TagIds.ToList(),
+        Subtasks = row.Subtasks.ToList()
     };
 
     private static TaskStatus ParseStatus(string status)

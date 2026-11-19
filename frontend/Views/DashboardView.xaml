@@ -1,6 +1,7 @@
 <UserControl x:Class="Frontend.Views.DashboardView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Frontend.Services"
              FontFamily="{StaticResource MainFontFamily}"
              FontSize="{StaticResource ControlFontSize}"
              Background="{DynamicResource FlBg}">
@@ -137,6 +138,9 @@
                                         Value="{DynamicResource FlMuted}"/>
 
                                 <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource FlStatusText}"/>
+                                    </DataTrigger>
                                     <DataTrigger Binding="{Binding IsOverdue}"
                                                  Value="True">
                                         <Setter Property="Foreground"
@@ -259,7 +263,7 @@
                 <StackPanel Orientation="Horizontal"
                             VerticalAlignment="Center">
 
-                    <TextBlock Text="ДОШКА ЗАВДАНЬ"
+                    <TextBlock Text="{loc:Translate Text=&quot;ДОШКА ЗАВДАНЬ&quot;}"
                                Style="{StaticResource PageTitleTextStyle}"
                                Foreground="{DynamicResource FlText}"
                                VerticalAlignment="Center"/>
@@ -291,7 +295,7 @@
                             Style="{StaticResource DashboardButtonStyle}"
                             Command="{Binding ToggleLanguageCommand}"/>
 
-                    <Button Content="+ Додати завдання"
+                    <Button Content="{loc:Translate Text=&quot;+ Додати завдання&quot;}"
                             Background="{DynamicResource FlAccent}"
                             Style="{StaticResource DashboardButtonStyle}"
                             Command="{Binding OpenNewTaskCommand}"/>
@@ -299,7 +303,7 @@
                     <Grid Margin="12,0,0,0">
                         <Button x:Name="NotificationsButton" Content="&#xE7F4;"
                                 FontFamily="Segoe MDL2 Assets"
-                                ToolTip="Сповіщення"
+                                ToolTip="{loc:Translate Text=&quot;Сповіщення&quot;}"
                                 Style="{StaticResource DashboardButtonStyle}"
                                 Command="{Binding OpenNotificationsCommand}"/>
                         <Popup IsOpen="{Binding IsNotificationsOpen, Mode=TwoWay}" StaysOpen="False"
@@ -308,7 +312,7 @@
                             <Border Margin="0,6,0,0" Padding="18,14" CornerRadius="12" MinWidth="220"
                                     Background="{DynamicResource FlSurface}" BorderBrush="{DynamicResource FlLine}"
                                     BorderThickness="1">
-                                <TextBlock Text="Немає нових сповіщень" Foreground="{DynamicResource FlMuted}"/>
+                                <TextBlock Text="{loc:Translate Text=&quot;Немає нових сповіщень&quot;}" Foreground="{DynamicResource FlMuted}"/>
                             </Border>
                         </Popup>
                     </Grid>
@@ -350,7 +354,7 @@
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="24"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
@@ -361,7 +365,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Канбан завдань"
+                        <TextBlock Text="{loc:Translate Text=&quot;Канбан завдань&quot;}"
                                    FontSize="{StaticResource BoardSectionFontSize}"
                                    FontWeight="{StaticResource SemiBoldFontWeight}"
                                    VerticalAlignment="Center"/>
@@ -379,18 +383,32 @@
                         </Border>
                     </StackPanel>
 
-                    <Border Grid.Column="1"
-                            Margin="16,0,0,0"
-                            Padding="{StaticResource CompactControlPadding}"
-                            Background="{DynamicResource FlSurface2}"
-                            CornerRadius="{StaticResource CornerRadius8}"
-                            HorizontalAlignment="Right">
-
-                        <TextBlock Text="Теги: ВИСОКИЙ · ПЛАН · ДОКУМЕНТАЦІЯ"
-                                   FontSize="{StaticResource SmallFontSize}"
-                                   Foreground="{DynamicResource FlMuted}"/>
-                    </Border>
                 </Grid>
+
+                <WrapPanel Grid.Row="1" Margin="0,12,0,12" VerticalAlignment="Center">
+                    <ComboBox Style="{StaticResource FlComboBox}" Width="150"
+                              ItemsSource="{Binding ProjectFilters}"
+                              SelectedItem="{Binding SelectedProjectFilter, Mode=TwoWay}" Margin="0,0,8,6"/>
+                    <ComboBox Style="{StaticResource FlComboBox}" Width="150"
+                              ItemsSource="{Binding PriorityFilters}"
+                              SelectedItem="{Binding SelectedPriorityFilter, Mode=TwoWay}" Margin="0,0,12,6"/>
+                    <TextBlock Text="{loc:Translate Text=&quot;Теги:&quot;}" Foreground="{DynamicResource FlMuted}"
+                               VerticalAlignment="Center" Margin="0,0,8,6"/>
+                    <ItemsControl ItemsSource="{Binding TagFilters}" Margin="0,0,8,6">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          Foreground="{DynamicResource FlText}" Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Style="{StaticResource FlButton}" Content="{loc:Translate Text=&quot;Скинути фільтри&quot;}"
+                            Command="{Binding ResetBoardFiltersCommand}" Padding="10,6" Margin="0,0,0,6"/>
+                </WrapPanel>
 
                 <ScrollViewer x:Name="BoardScroll"
                               Grid.Row="2"
@@ -421,11 +439,11 @@
                         <Border Style="{StaticResource DashboardPanelStyle}">
                             <StackPanel>
                                 <Grid>
-                                    <TextBlock Text="ЧАС"
+                                    <TextBlock Text="{loc:Translate Text=&quot;ЧАС&quot;}"
                                                FontSize="{StaticResource SmallFontSize}"
                                                FontWeight="{StaticResource SemiBoldFontWeight}"/>
 
-                                    <TextBlock Text="СФОКУСУВАННЯ"
+                                    <TextBlock Text="{loc:Translate Text=&quot;СФОКУСУВАННЯ&quot;}"
                                                HorizontalAlignment="Right"
                                                FontSize="{StaticResource TinyFontSize}"
                                                Foreground="{DynamicResource FlAccent}"/>
@@ -454,7 +472,7 @@
 
                                     <Button Content="↻"
                                             Margin="0,0,8,0"
-                                            ToolTip="Скинути"
+                                            ToolTip="{loc:Translate Text=&quot;Скинути&quot;}"
                                             Style="{StaticResource DashboardButtonStyle}"
                                             Command="{Binding ResetTimerCommand}"/>
 
@@ -465,7 +483,7 @@
 
                                     <Button Content="■"
                                             Margin="8,0,0,0"
-                                            ToolTip="Зупинити"
+                                            ToolTip="{loc:Translate Text=&quot;Зупинити&quot;}"
                                             Style="{StaticResource DashboardButtonStyle}"
                                             Command="{Binding PauseTimerCommand}"/>
                                 </StackPanel>
@@ -473,7 +491,7 @@
                         </Border>
 
                         <!-- Статус -->
-                        <TextBlock Text="СТАТУС"
+                        <TextBlock Text="{loc:Translate Text=&quot;СТАТУС&quot;}"
                                    Margin="0,28,0,12"
                                    FontSize="{StaticResource SmallFontSize}"
                                    Foreground="{DynamicResource FlMuted}"/>
@@ -500,7 +518,7 @@
 
                         <!-- Розклад -->
                         <Grid Margin="0,18,0,12">
-                            <TextBlock Text="РОЗКЛАД НА ДЕНЬ"
+                            <TextBlock Text="{loc:Translate Text=&quot;РОЗКЛАД НА ДЕНЬ&quot;}"
                                        FontSize="{StaticResource SmallFontSize}"
                                        Foreground="{DynamicResource FlMuted}"/>
 
@@ -566,7 +584,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <TextBlock Text="На сьогодні немає запланованих завдань і фокус-сесій"
+                        <TextBlock Text="{loc:Translate Text=&quot;На сьогодні немає запланованих завдань і фокус-сесій&quot;}"
                                    TextWrapping="Wrap"
                                    FontSize="{StaticResource SmallFontSize}"
                                    Foreground="{DynamicResource FlMuted}"
@@ -588,7 +606,7 @@
                     BorderThickness="1" CornerRadius="18" Padding="28">
                 <StackPanel>
                     <Grid>
-                        <TextBlock Text="Деталі завдання" FontSize="22" FontWeight="Bold"/>
+                        <TextBlock Text="{loc:Translate Text=&quot;Деталі завдання&quot;}" FontSize="22" FontWeight="Bold"/>
                         <Button HorizontalAlignment="Right" Style="{StaticResource FlIconButton}" Content="&#xE711;"
                                 Command="{Binding CloseDetailsCommand}"/>
                     </Grid>
@@ -610,22 +628,26 @@
                     <TextBlock Text="{Binding SelectedTask.PriorityLabel, StringFormat='Пріоритет: {0}'}" Margin="0,6,0,0"/>
                     <TextBlock Text="{Binding SelectedTask.DueText, StringFormat='Термін: {0}'}" Margin="0,6,0,0"/>
                     <TextBlock Text="{Binding SelectedTask.EstimateText, StringFormat='Оцінка часу: {0}'}" Margin="0,6,0,0"/>
-                    <TextBlock Text="Статус" Foreground="{DynamicResource FlMuted}" Margin="0,16,0,6"/>
+                    <TextBlock Text="{loc:Translate Text=&quot;Статус&quot;}" Foreground="{DynamicResource FlMuted}" Margin="0,16,0,6"/>
                     <ComboBox Style="{StaticResource FlComboBox}" ItemsSource="{Binding TaskStatuses}"
                               SelectedItem="{Binding SelectedTask.Status, Mode=TwoWay}"/>
                     <Grid Margin="0,24,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="8"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="8"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Style="{StaticResource FlButton}" Content="Видалити" Padding="16,10"
+                        <Button Style="{StaticResource FlButton}" Content="{loc:Translate Text=&quot;Видалити&quot;}" Padding="16,10"
                                 Command="{Binding DeleteTaskCommand}"/>
-                        <Button Grid.Column="2" Style="{StaticResource FlButton}" Content="Перемкнути виконання"
+                        <Button Grid.Column="2" Style="{StaticResource FlButton}" Content="{loc:Translate Text=&quot;Редагувати&quot;}"
+                                Padding="16,10" Command="{Binding EditTaskCommand}"/>
+                        <Button Grid.Column="4" Style="{StaticResource FlButton}" Content="{loc:Translate Text=&quot;Перемкнути виконання&quot;}"
                                 Padding="16,10" Command="{Binding ToggleTaskCompleteCommand}"/>
-                        <Button Grid.Column="4" Style="{StaticResource FlPrimaryButton}" Content="Фокус 25 хв"
+                        <Button Grid.Column="6" Style="{StaticResource FlPrimaryButton}" Content="{loc:Translate Text=&quot;Фокус 25 хв&quot;}"
                                 Padding="16,10" Command="{Binding StartTaskFocusCommand}"/>
                     </Grid>
                 </StackPanel>

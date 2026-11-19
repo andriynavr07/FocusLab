@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using FocusLab.Application.Abstractions;
@@ -12,6 +13,7 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     private readonly TaskBoardStore _store;
     private readonly TimerViewModel _timer;
     private readonly IActivityService _activity;
+    private readonly ICatalogService _catalog;
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _activityDebounce;
     private readonly DashboardStatistic _doneToday = new("Виконано сьогодні", "0 завдань");
@@ -27,12 +29,19 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     private bool _activityLoading;
     private bool _activityDirty;
     private bool _disposed;
+    private string _selectedProjectFilter = "Усі проєкти";
+    private string _selectedPriorityFilter = "Усі пріоритети";
 
-    public DashboardViewModel(TaskBoardStore store, TimerViewModel timer, IActivityService activity)
+    public DashboardViewModel(
+        TaskBoardStore store,
+        TimerViewModel timer,
+        IActivityService activity,
+        ICatalogService catalog)
     {
         _store = store;
         _timer = timer;
         _activity = activity;
+        _catalog = catalog;
         _store.Changed += OnStoreChanged;
         _timer.FocusSessionFinished += OnFocusSessionFinished;
 
@@ -43,6 +52,14 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
                 SelectedTask.Status = "InProgress";
             _timer.StartFocusFor(SelectedTask);
         });
+        EditTaskCommand = new RelayCommand(_ =>
+        {
+            if (SelectedTask is { } task)
+            {
+                IsDetailsOpen = false;
+                EditTaskRequested?.Invoke(task);
+            }
+        });
         ToggleTaskCompleteCommand = new RelayCommand(_ =>
         {
             if (SelectedTask is not null)
@@ -52,9 +69,17 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         {
             if (SelectedTask is not null)
             {
-                _store.Remove(SelectedTask);
-                IsDetailsOpen = false;
+                if (_store.Remove(SelectedTask))
+                    IsDetailsOpen = false;
             }
+        });
+        ResetBoardFiltersCommand = new RelayCommand(_ =>
+        {
+            SearchText = string.Empty;
+            SelectedProjectFilter = ProjectFilters[0];
+            SelectedPriorityFilter = PriorityFilters[0];
+            foreach (var tag in TagFilters)
+                tag.IsSelected = false;
         });
 
         Statistics = new ObservableCollection<DashboardStatistic> { _doneToday, _focusToday, _streak };
@@ -87,9 +112,15 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         RefreshRowStatistics();
         RefreshSchedule();
         _ = RefreshActivityAsync();
+        _ = RefreshCatalogAsync();
     }
 
     public ObservableCollection<DashboardColumn> Columns { get; } = new();
+    public ObservableCollection<string> ProjectFilters { get; } = ["Усі проєкти"];
+    public ObservableCollection<TagOption> TagFilters { get; } = [];
+    private static readonly string[] PriorityFilterTexts = ["Усі пріоритети", "Критичний", "Високий", "Середній", "Низький"];
+    public string[] PriorityFilters => PriorityFilterTexts.Select(UiPreferences.Instance.Translate).ToArray();
+    public event Action<TaskRow>? EditTaskRequested;
     public TimerViewModel Timer => _timer;
     public int TotalTaskCount => Columns.Sum(column => column.Tasks.Count);
 
@@ -103,12 +134,32 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     }
 
     public bool IsDetailsOpen { get => _isDetailsOpen; set => SetField(ref _isDetailsOpen, value); }
+    public string SelectedProjectFilter
+    {
+        get => UiPreferences.Instance.Translate(_selectedProjectFilter);
+        set
+        {
+            var source = value == UiPreferences.Instance.Translate("Усі проєкти") ? "Усі проєкти" : value;
+            if (SetField(ref _selectedProjectFilter, source)) RefreshBoard();
+        }
+    }
+    public string SelectedPriorityFilter
+    {
+        get => UiPreferences.Instance.Translate(_selectedPriorityFilter);
+        set
+        {
+            var source = PriorityFilterTexts.FirstOrDefault(item => UiPreferences.Instance.Translate(item) == value) ?? value;
+            if (SetField(ref _selectedPriorityFilter, source)) RefreshBoard();
+        }
+    }
     public string[] TaskStatuses { get; } = { "Todo", "InProgress", "Review", "Deferred", "Done" };
 
     public ICommand CloseDetailsCommand { get; }
     public ICommand StartTaskFocusCommand { get; }
     public ICommand ToggleTaskCompleteCommand { get; }
     public ICommand DeleteTaskCommand { get; }
+    public ICommand EditTaskCommand { get; }
+    public ICommand ResetBoardFiltersCommand { get; }
     public ICommand ToggleTimerCommand => _timer.ToggleCommand;
     public ICommand ResetTimerCommand => _timer.ResetCommand;
     public ICommand PauseTimerCommand => _timer.PauseCommand;
@@ -123,6 +174,52 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     public bool IsScheduleEmpty => Schedule.Count == 0;
 
     protected override void OnSearchChanged() => RefreshBoard();
+
+    protected override void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(PriorityFilters));
+        OnPropertyChanged(nameof(SelectedPriorityFilter));
+        OnPropertyChanged(nameof(SelectedProjectFilter));
+        if (ProjectFilters.Count > 0)
+            ProjectFilters[0] = UiPreferences.Instance.Translate("Усі проєкти");
+        foreach (var statistic in Statistics)
+            statistic.RefreshLanguage();
+        foreach (var column in Columns)
+            column.RefreshLanguage();
+        RefreshBoard();
+        RefreshRowStatistics();
+        RefreshSchedule();
+    }
+
+    public async Task RefreshCatalogAsync()
+    {
+        try
+        {
+            var projects = await _catalog.GetProjectsAsync();
+            var tags = await _catalog.GetTagsAsync();
+            var selectedTagIds = TagFilters.Where(tag => tag.IsSelected).Select(tag => tag.Id).ToHashSet();
+            ProjectFilters.Clear();
+            ProjectFilters.Add("Усі проєкти");
+            foreach (var project in projects)
+                ProjectFilters.Add(project.Name);
+            TagFilters.Clear();
+            foreach (var tag in tags)
+            {
+                var option = new TagOption(tag.Id, tag.Name, tag.Color);
+                option.IsSelected = selectedTagIds.Contains(tag.Id);
+                option.PropertyChanged += (_, _) => RefreshBoard();
+                TagFilters.Add(option);
+            }
+            if (!ProjectFilters.Contains(SelectedProjectFilter))
+                SelectedProjectFilter = ProjectFilters[0];
+            RefreshBoard();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"{UiPreferences.Instance.Translate("Не вдалося завантажити фільтри")}:\n{ex.Message}",
+                "FocusLab", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     // ═════════ Drag-and-drop ═════════
 
@@ -149,10 +246,16 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
 
     private void OnStoreChanged(object? sender, EventArgs e)
     {
-        RefreshBoard();
-        RefreshRowStatistics();
-        RefreshSchedule();
-        ScheduleActivityRefresh();
+        _clockTimer.Dispatcher.BeginInvoke(DispatcherPriority.DataBind, new Action(() =>
+        {
+            if (_disposed)
+                return;
+
+            RefreshBoard();
+            RefreshRowStatistics();
+            RefreshSchedule();
+            ScheduleActivityRefresh();
+        }));
     }
 
     private void OnFocusSessionFinished(object? sender, EventArgs e) => ScheduleActivityRefresh();
@@ -186,7 +289,7 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         foreach (var (title, status) in columns)
         {
             var tasks = _store.Rows
-                .Where(row => row.Status == status && MatchesSearch(row))
+                .Where(row => row.Status == status && MatchesSearch(row) && MatchesBoardFilters(row))
                 .Select(row => new DashboardTask(
                     row,
                     new RelayCommand(_ => OpenTask(row)),
@@ -258,7 +361,9 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         foreach (var row in _store.Rows.Where(r => r.DueDate.Date == today))
         {
             var hasTime = row.DueDate.TimeOfDay != TimeSpan.Zero;
-            var duration = row.EstimatedMinutes is > 0 ? Uk.Duration(row.EstimatedMinutes.Value) : "Без оцінки часу";
+            var duration = row.EstimatedMinutes is > 0
+                ? Uk.Duration(row.EstimatedMinutes.Value)
+                : UiPreferences.Instance.Translate("Без оцінки часу");
             entries.Add((
                 row.DueDate,
                 new DashboardScheduleItem(hasTime ? row.DueDate.ToString("HH:mm") : "—", row.Title, duration, row.IsDone)));
@@ -267,11 +372,16 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         foreach (var session in _sessionsToday)
         {
             var start = session.StartUtc.ToLocalTime();
-            var title = string.IsNullOrWhiteSpace(session.TaskTitle) ? "Фокус-сесія" : session.TaskTitle;
-            var suffix = session.IsCompleted ? "фокусу" : "фокусу (перервано)";
+            var title = string.IsNullOrWhiteSpace(session.TaskTitle)
+                ? UiPreferences.Instance.Translate("Фокус-сесія")
+                : session.TaskTitle;
+            var suffix = UiPreferences.Instance.Translate(session.IsCompleted ? "фокусу" : "фокусу (перервано)");
+            var duration = UiPreferences.Instance.Language == "English"
+                ? $"{session.DurationMinutes} min {suffix}"
+                : $"{session.DurationMinutes} хв {suffix}";
             entries.Add((
                 start,
-                new DashboardScheduleItem(start.ToString("HH:mm"), title, $"{session.DurationMinutes} хв {suffix}", session.IsCompleted)));
+                new DashboardScheduleItem(start.ToString("HH:mm"), title, duration, session.IsCompleted)));
         }
 
         var ordered = entries.OrderBy(e => e.Start).ToList();
@@ -290,7 +400,18 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
 
     private bool MatchesSearch(TaskRow row) =>
         string.IsNullOrWhiteSpace(SearchText)
-        || $"{row.Title} {row.Project} {row.Description}".Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+        || row.Title.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+
+    private bool MatchesBoardFilters(TaskRow row)
+    {
+        if (_selectedProjectFilter != "Усі проєкти" && row.Project != _selectedProjectFilter)
+            return false;
+        if (_selectedPriorityFilter != "Усі пріоритети"
+            && !row.PriorityLabel.Equals(UiPreferences.Instance.Translate(_selectedPriorityFilter), StringComparison.OrdinalIgnoreCase))
+            return false;
+        var selectedTagIds = TagFilters.Where(tag => tag.IsSelected).Select(tag => tag.Id).ToArray();
+        return selectedTagIds.Length == 0 || row.TagIds.Intersect(selectedTagIds).Any();
+    }
 
     public void Dispose()
     {
@@ -308,7 +429,8 @@ public class DashboardColumn(string title, string status, IEnumerable<DashboardT
 {
     private bool _isDragOver;
 
-    public string Title { get; } = title;
+    public string Title => UiPreferences.Instance.Translate(title);
+    public void RefreshLanguage() => OnPropertyChanged(nameof(Title));
 
     /// <summary>Значення TaskRow.Status, яке отримає картка після перенесення в цю колонку.</summary>
     public string Status { get; } = status;
@@ -322,14 +444,16 @@ public class DashboardColumn(string title, string status, IEnumerable<DashboardT
 public class DashboardTask(TaskRow task, ICommand openCommand, ICommand focusCommand)
 {
     public TaskRow Row { get; } = task;
-    public string Project => task.Project;
-    public string Priority => task.PriorityLabel;
-    public string Title => task.Title;
-    public string DueDate => task.IsDone ? "Виконано" : task.IsOverdue ? "Прострочено" : task.DueText;
-    public string EstimateText => task.EstimateText;
-    public bool IsCompleted => task.IsDone;
-    public bool IsOverdue => task.IsOverdue;
-    public int ResourceCount => task.ResourceCount;
+    public string Project => Row.Project;
+    public string Priority => Row.PriorityLabel;
+    public string Title => Row.Title;
+    public string DueDate => Row.IsDone
+        ? UiPreferences.Instance.Translate("Виконано")
+        : Row.IsOverdue ? UiPreferences.Instance.Translate("Прострочено") : Row.DueText;
+    public string EstimateText => Row.EstimateText;
+    public bool IsCompleted => Row.IsDone;
+    public bool IsOverdue => Row.IsOverdue;
+    public int ResourceCount => Row.ResourceCount;
     public ICommand OpenCommand { get; } = openCommand;
     public ICommand FocusCommand { get; } = focusCommand;
 }
@@ -338,8 +462,9 @@ public class DashboardStatistic(string label, string value) : BoardBase
 {
     private string _value = value;
 
-    public string Label { get; } = label;
+    public string Label => UiPreferences.Instance.Translate(label);
     public string Value { get => _value; set => SetField(ref _value, value); }
+    public void RefreshLanguage() => OnPropertyChanged(nameof(Label));
 }
 
 public class DashboardScheduleItem(string time, string title, string duration, bool isDone) : BoardBase

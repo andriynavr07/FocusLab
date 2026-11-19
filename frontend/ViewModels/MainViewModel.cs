@@ -9,6 +9,7 @@ public class MainViewModel : ViewModelBase
 {
     private readonly IAuthService _auth;
     private readonly ITaskService _tasks;
+    private readonly ICatalogService _catalog;
     private readonly ICurrentAccount _currentAccount;
     private readonly IFocusTimerService _focusTimer;
     private readonly IFocusSettingsProvider _focusSettings;
@@ -28,6 +29,7 @@ public class MainViewModel : ViewModelBase
     public MainViewModel(
         IAuthService auth,
         ITaskService tasks,
+        ICatalogService catalog,
         ICurrentAccount currentAccount,
         IFocusTimerService focusTimer,
         IFocusSettingsProvider focusSettings,
@@ -35,6 +37,7 @@ public class MainViewModel : ViewModelBase
     {
         _auth = auth;
         _tasks = tasks;
+        _catalog = catalog;
         _currentAccount = currentAccount;
         _focusTimer = focusTimer;
         _focusSettings = focusSettings;
@@ -52,7 +55,7 @@ public class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Не вдалося прочитати акаунт:\n{ex.Message}", "FocusLab",
+            MessageBox.Show($"{UiPreferences.Instance.Translate("Не вдалося прочитати акаунт")}:\n{ex.Message}", "FocusLab",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             ShowLogin();
         }
@@ -79,8 +82,8 @@ public class MainViewModel : ViewModelBase
         await LoadProfileAsync();
 
         var store = new TaskBoardStore(_tasks);
-        var timer = new TimerViewModel(_focusTimer, _focusSettings);
-        Current = new WorkspaceViewModel(store, timer, _activity, _auth, onLogout: Logout);
+        var timer = new TimerViewModel(_focusTimer, _focusSettings, store);
+        Current = new WorkspaceViewModel(store, timer, _activity, _auth, _catalog, onLogout: Logout);
         await store.LoadAsync();
     }
 
@@ -94,7 +97,7 @@ public class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Не вдалося завантажити профіль:\n{ex.Message}", "FocusLab",
+            MessageBox.Show($"{UiPreferences.Instance.Translate("Не вдалося завантажити профіль")}:\n{ex.Message}", "FocusLab",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }

@@ -15,18 +15,20 @@ namespace Frontend.ViewModels;
 public class AccentOption : BoardBase
 {
     private bool _isSelected;
+    private readonly string _name;
 
     public AccentOption(string name, string hex)
     {
-        Name = name;
+        _name = name;
         Color = (Color)ColorConverter.ConvertFromString(hex);
         Brush = new SolidColorBrush(Color);
     }
 
-    public string Name { get; }
+    public string Name => UiPreferences.Instance.Translate(_name);
     public Color Color { get; }
     public SolidColorBrush Brush { get; }
     public bool IsSelected { get => _isSelected; set => SetField(ref _isSelected, value); }
+    public void RefreshLanguage() => OnPropertyChanged(nameof(Name));
 }
 
 public class SettingsViewModel : PageViewModelBase
@@ -43,7 +45,6 @@ public class SettingsViewModel : PageViewModelBase
     private bool _isEditOpen, _isDeleteOpen;
     private bool _notifyTasks = true, _notifyBreaks = true, _dailyReport, _sounds = true;
     private int _workDefault = 25, _breakDefault = 5, _sessionsDefault = 4;
-    private string _language = "Українська";
     private readonly TimerViewModel _timer;
     private readonly IAuthService _auth;
 
@@ -69,8 +70,8 @@ public class SettingsViewModel : PageViewModelBase
         {
             IsDeleteOpen = false;
             MessageBox.Show(
-                "Видалення акаунта недоступне: цей застосунок зараз використовує локальний демонстраційний профіль.",
-                "Видалення акаунта",
+                UiPreferences.Instance.Translate("Видалення акаунта недоступне: цей застосунок зараз використовує локальний демонстраційний профіль."),
+                UiPreferences.Instance.Translate("Видалення акаунта"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         });
@@ -100,13 +101,14 @@ public class SettingsViewModel : PageViewModelBase
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Не вдалося відкрити підтримку", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, UiPreferences.Instance.Translate("Не вдалося відкрити підтримку"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         });
     }
 
     public ObservableCollection<AccentOption> Accents { get; }
-    public string[] Languages { get; } = { "Українська", "English" };
+    public string[] Languages => new[] { "Українська", "English" }
+        .Select(UiPreferences.Instance.Translate).ToArray();
 
     public string UserName
     {
@@ -150,7 +152,7 @@ public class SettingsViewModel : PageViewModelBase
         }
         catch (Exception ex)
         {
-            EditError = "Помилка збереження: " + ex.Message;
+            EditError = UiPreferences.Instance.Translate("Помилка збереження") + ": " + ex.Message;
         }
         finally
         {
@@ -201,21 +203,48 @@ public class SettingsViewModel : PageViewModelBase
     public int WorkDefault { get => _workDefault; set { if (SetField(ref _workDefault, value)) OnPropertyChanged(nameof(WorkDefaultText)); } }
     public int BreakDefault { get => _breakDefault; set { if (SetField(ref _breakDefault, value)) OnPropertyChanged(nameof(BreakDefaultText)); } }
     public int SessionsDefault { get => _sessionsDefault; set { if (SetField(ref _sessionsDefault, value)) OnPropertyChanged(nameof(SessionsDefaultText)); } }
-    public string WorkDefaultText => $"{WorkDefault} хв";
-    public string BreakDefaultText => $"{BreakDefault} хв";
+    public string WorkDefaultText => Uk.Duration(WorkDefault);
+    public string BreakDefaultText => Uk.Duration(BreakDefault);
     public string SessionsDefaultText => $"{SessionsDefault} {Uk.Plural(SessionsDefault, "сесія", "сесії", "сесій")}";
 
     private static int Next(int[] steps, int current) => steps[(Array.IndexOf(steps, current) + 1) % steps.Length];
 
-    public string SelectedLanguage { get => _language; set { if (value != null) SetField(ref _language, value); } }
-    public string VersionText => "Версія v0.0.1";
+    public string SelectedLanguage
+    {
+        get => UiPreferences.Instance.Translate(UiPreferences.Instance.Language);
+        set
+        {
+            var source = UiPreferences.Instance.SourceText(value ?? string.Empty);
+            if (source is "Українська" or "English" && source != UiPreferences.Instance.Language)
+                UiPreferences.Instance.SetLanguage(source);
+        }
+    }
+
+    protected override void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(SelectedLanguage));
+        OnPropertyChanged(nameof(Languages));
+        OnPropertyChanged(nameof(WorkDefaultText));
+        OnPropertyChanged(nameof(BreakDefaultText));
+        OnPropertyChanged(nameof(SessionsDefaultText));
+        OnPropertyChanged(nameof(VersionText));
+        OnPropertyChanged(nameof(EditError));
+        foreach (var accent in Accents)
+            accent.RefreshLanguage();
+    }
+
+    public string VersionText => UiPreferences.Instance.Translate("Версія v0.0.1");
 
     // ----- модалки -----
     public bool IsEditOpen { get => _isEditOpen; set => SetField(ref _isEditOpen, value); }
     public bool IsDeleteOpen { get => _isDeleteOpen; set => SetField(ref _isDeleteOpen, value); }
     public string EditName { get => _editName; set { if (SetField(ref _editName, value)) OnPropertyChanged(nameof(CanSaveProfile)); } }
     public string EditEmail { get => _editEmail; set { if (SetField(ref _editEmail, value)) OnPropertyChanged(nameof(CanSaveProfile)); } }
-    public string EditError { get => _editError; private set => SetField(ref _editError, value); }
+    public string EditError
+    {
+        get => UiPreferences.Instance.Translate(_editError);
+        private set => SetField(ref _editError, value);
+    }
     public bool CanSaveProfile => !_isSavingProfile && EditName.Trim().Length > 0 && EditEmail.Contains('@');
 
     public ICommand SelectAccentCommand { get; }

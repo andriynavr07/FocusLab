@@ -1,5 +1,6 @@
 using System.Windows.Input;
 using FocusLab.Application.Abstractions;
+using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
@@ -20,7 +21,13 @@ public class RegisterViewModel : PageViewModelBase
     public string Email { get => _email; set { _email = value; OnPropertyChanged(); } }
     public string Password { get => _password; set { _password = value; OnPropertyChanged(); } }
     public string ConfirmPassword { get => _confirmPassword; set { _confirmPassword = value; OnPropertyChanged(); } }
-    public string ErrorMessage { get => _errorMessage; private set { _errorMessage = value; OnPropertyChanged(); } }
+    public string ErrorMessage
+    {
+        get => UiPreferences.Instance.Translate(_errorMessage);
+        private set { _errorMessage = value; OnPropertyChanged(); }
+    }
+
+    protected override void OnLanguageChanged() => OnPropertyChanged(nameof(ErrorMessage));
 
     public ICommand RegisterCommand { get; }
     public ICommand NavigateToLoginCommand { get; }
@@ -59,7 +66,7 @@ public class RegisterViewModel : PageViewModelBase
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Помилка реєстрації: {ex.Message}";
+            ErrorMessage = $"{UiPreferences.Instance.Translate("Помилка реєстрації")}: {ex.Message}";
         }
         finally
         {

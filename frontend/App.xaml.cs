@@ -30,6 +30,7 @@ public partial class App : Application
         try
         {
             AppPaths.EnsureCreated();
+            UiPreferences.Instance.Initialize(AppPaths.Root);
 
             _host = Host.CreateDefaultBuilder()
                 .ConfigureServices(services =>
@@ -59,7 +60,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             MessageBox.Show(
-                $"Не вдалося запустити застосунок:\n{ex.Message}",
+                $"{UiPreferences.Instance.Translate("Не вдалося запустити застосунок")}:\n{ex.Message}",
                 "FocusLab",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -74,33 +75,77 @@ public partial class App : Application
         window.Show();
     }
 
-    /// <summary>Незавершена фокус-сесія при закритті — попередити й зберегти її як перервану (SC-06, A2).</summary>
+    /// <summary>Користувач обирає, чи записувати незавершену робочу сесію перед закриттям.</summary>
     private async void OnMainWindowClosing(object? sender, CancelEventArgs e)
     {
         if (_closeConfirmed || _host is null)
             return;
 
         var timer = _host.Services.GetRequiredService<IFocusTimerService>();
-        if (!timer.HasActiveSession)
+        if (!timer.HasActiveSession && timer.PendingUnsavedSessions == 0)
             return;
 
         e.Cancel = true;
+        if (!timer.HasActiveSession)
+        {
+            var retry = MessageBox.Show(
+                UiPreferences.Instance.Translate("Попередню фокус-сесію не вдалося записати.\n\nТак — повторити збереження.\nНі — закрити без збереження цієї сесії.\nСкасувати — продовжити роботу."),
+                "FocusLab",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Warning);
+            if (retry == MessageBoxResult.Cancel)
+                return;
+
+            if (retry == MessageBoxResult.Yes)
+            {
+                await timer.RetryPendingAsync();
+                if (timer.PendingUnsavedSessions > 0)
+                {
+                    MessageBox.Show(
+                        UiPreferences.Instance.Translate("Не вдалося зберегти сесію. Вона залишиться в пам'яті, поки застосунок відкритий."),
+                        "FocusLab",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+            }
+
+            _closeConfirmed = true;
+            (sender as Window)?.Close();
+            return;
+        }
+
         var answer = MessageBox.Show(
-            "Фокус-сесія ще триває. Завершити її та закрити FocusLab?",
+            UiPreferences.Instance.Translate("Фокус-сесія ще триває.\n\nТак — закрити й зберегти її як перервану.\nНі — закрити без збереження незавершеної сесії.\nСкасувати — продовжити роботу."),
             "FocusLab",
-            MessageBoxButton.YesNo,
+            MessageBoxButton.YesNoCancel,
             MessageBoxImage.Warning);
-        if (answer != MessageBoxResult.Yes)
+        if (answer == MessageBoxResult.Cancel)
             return;
 
         try
         {
-            await timer.StopAsync();
+            await timer.StopAsync(saveInterruptedSession: answer == MessageBoxResult.Yes);
+            if (answer == MessageBoxResult.Yes && timer.PendingUnsavedSessions > 0)
+            {
+                MessageBox.Show(
+                    UiPreferences.Instance.Translate("Не вдалося записати перервану сесію. Спробуйте закрити ще раз, щоб повторити збереження."),
+                    "FocusLab",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
         }
         catch (Exception ex)
         {
             _host.Services.GetRequiredService<ILogger<App>>()
                 .LogWarning(ex, "Не вдалося зберегти перервану сесію при закритті");
+            MessageBox.Show(
+                UiPreferences.Instance.Translate("Не вдалося завершити фокус-сесію. Застосунок залишився відкритим."),
+                "FocusLab",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
         }
 
         _closeConfirmed = true;

@@ -4,7 +4,7 @@ using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
-public class CalendarEvent
+public class CalendarEvent : BoardBase
 {
     public string Title { get; init; } = "";
     public TimeSpan Start { get; init; }
@@ -14,11 +14,13 @@ public class CalendarEvent
     public bool IsDone { get; init; }
 
     public string TimeRange => $"{Start:hh\\:mm} - {Start.Add(TimeSpan.FromMinutes(Minutes)):hh\\:mm}";
-    public string Meta => $"{Duration} • {Project}";
+    public string Meta => $"{Duration} • {(string.IsNullOrWhiteSpace(Project) ? UiPreferences.Instance.Translate("Без проєкту") : Project)}";
 
     private string Duration => Minutes % 60 == 0
         ? $"{Minutes / 60} {Uk.Plural(Minutes / 60, "година", "години", "годин")}"
-        : $"{Minutes} хвилин";
+        : UiPreferences.Instance.Language == "English" ? $"{Minutes} min" : $"{Minutes} хвилин";
+
+    public void RefreshLanguage() => OnPropertyChanged(nameof(Meta));
 }
 
 public class DayCell : BoardBase
@@ -70,7 +72,7 @@ public class CalendarViewModel : PageViewModelBase
     public ICommand PrevMonthCommand { get; }
     public ICommand NextMonthCommand { get; }
 
-    public string MonthTitle => $"{MonthNames[_month.Month - 1]} {_month.Year}";
+    public string MonthTitle => $"{UiPreferences.Instance.Translate(MonthNames[_month.Month - 1])} {_month.Year}";
 
     public string SelectedDayTitle
     {
@@ -78,7 +80,7 @@ public class CalendarViewModel : PageViewModelBase
         {
             var m = Uk.Month(_selected);
             var month = char.ToUpper(m[0]) + m[1..].ToLower();
-            return $"{DayNames[((int)_selected.DayOfWeek + 6) % 7]}, {_selected.Day} {month}";
+            return $"{UiPreferences.Instance.Translate(DayNames[((int)_selected.DayOfWeek + 6) % 7])}, {_selected.Day} {month}";
         }
     }
 
@@ -111,6 +113,11 @@ public class CalendarViewModel : PageViewModelBase
         get
         {
             var n = SelectedEvents.Count;
+            if (UiPreferences.Instance.Language == "English")
+                return n == 0
+                    ? "A free day. Use it to plan or rest."
+                    : $"{n} {(n == 1 ? "task is" : "tasks are")} planned for this day. " +
+                      "We recommend taking a long break after the second session.";
             return n == 0
                 ? "Вільний день. Використайте його для планування або відпочинку."
                 : $"На цей день заплановано {n} {Uk.Plural(n, "завдання", "завдання", "завдань")}. " +
@@ -119,6 +126,16 @@ public class CalendarViewModel : PageViewModelBase
     }
 
     protected override void OnSearchChanged() => LoadSelected();
+
+    protected override void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(MonthTitle));
+        OnPropertyChanged(nameof(SelectedDayTitle));
+        OnPropertyChanged(nameof(MonthTasksText));
+        OnPropertyChanged(nameof(AdviceText));
+        foreach (var item in SelectedEvents)
+            item.RefreshLanguage();
+    }
 
     private IEnumerable<(DateTime date, CalendarEvent ev)> MonthEventsRaw() =>
         _store.Rows

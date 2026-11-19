@@ -1,6 +1,7 @@
 <UserControl x:Class="Frontend.Views.WorkspaceView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Frontend.Services"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
@@ -142,7 +143,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE80F;"
                                            Style="{StaticResource SidebarIconStyle}"/>
-                                <TextBlock Text="Головна"/>
+                                <TextBlock Text="{loc:Translate Text=&quot;Головна&quot;}"/>
                             </StackPanel>
                         </ListBoxItem>
 
@@ -156,7 +157,7 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xE8A5;"
                                                Style="{StaticResource SidebarIconStyle}"/>
-                                    <TextBlock Text="Завдання"/>
+                                    <TextBlock Text="{loc:Translate Text=&quot;Завдання&quot;}"/>
                                 </StackPanel>
 
                                 <Border Grid.Column="1"
@@ -173,7 +174,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE787;"
                                            Style="{StaticResource SidebarIconStyle}"/>
-                                <TextBlock Text="Календар"/>
+                                <TextBlock Text="{loc:Translate Text=&quot;Календар&quot;}"/>
                             </StackPanel>
                         </ListBoxItem>
 
@@ -181,7 +182,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE916;"
                                            Style="{StaticResource SidebarIconStyle}"/>
-                                <TextBlock Text="Таймер"/>
+                                <TextBlock Text="{loc:Translate Text=&quot;Таймер&quot;}"/>
                             </StackPanel>
                         </ListBoxItem>
 
@@ -189,14 +190,14 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE713;"
                                            Style="{StaticResource SidebarIconStyle}"/>
-                                <TextBlock Text="Налаштування"/>
+                                <TextBlock Text="{loc:Translate Text=&quot;Налаштування&quot;}"/>
                             </StackPanel>
                         </ListBoxItem>
 
                     </ListBox>
 
                     <Button Grid.Row="3"
-                            Content="Вийти з акаунта"
+                            Content="{loc:Translate Text=&quot;Вийти з акаунта&quot;}"
                             Command="{Binding LogoutCommand}"
                             Padding="{StaticResource NavigationItemPadding}"
                             HorizontalContentAlignment="Left"
