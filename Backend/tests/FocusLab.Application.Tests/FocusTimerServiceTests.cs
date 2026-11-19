@@ -171,6 +171,33 @@ public sealed class FocusTimerServiceTests
     }
 
     [Fact]
+    public async Task Stop_WhenExplicitlyDiscardingInterruptedSession_DoesNotSave()
+    {
+        using var sut = CreateSut(new FocusSettings { SaveInterruptedSessions = true });
+        sut.Start(7);
+        _clock.Advance(TimeSpan.FromMinutes(10));
+
+        await sut.StopAsync(saveInterruptedSession: false);
+
+        await _focus.DidNotReceiveWithAnyArgs()
+            .SaveSessionAsync(default, default, default, default, default, default);
+        sut.Status.Should().Be(TimerStatus.Idle);
+    }
+
+    [Fact]
+    public async Task Stop_WhenExplicitlySavingInterruptedSession_SavesEvenIfSettingDisabled()
+    {
+        using var sut = CreateSut(new FocusSettings { SaveInterruptedSessions = false });
+        var start = _clock.UtcNow;
+        sut.Start(7);
+        _clock.Advance(TimeSpan.FromMinutes(10));
+
+        await sut.StopAsync(saveInterruptedSession: true);
+
+        await _focus.Received(1).SaveSessionAsync(7, start, 25, 10, false, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task SaveFailure_KeepsSessionPending_AndRetrySucceeds()
     {
         _focus.SaveSessionAsync(default, default, default, default, default, default)

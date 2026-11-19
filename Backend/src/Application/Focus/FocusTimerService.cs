@@ -149,10 +149,10 @@ public sealed class FocusTimerService : IFocusTimerService, IDisposable
         RaiseStateChanged();
     }
 
-    public async Task StopAsync()
+    public async Task StopAsync(bool? saveInterruptedSession = null)
     {
         PendingSession? partial = null;
-        var saveInterrupted = _settings.Current.SaveInterruptedSessions;
+        var saveInterrupted = saveInterruptedSession ?? _settings.Current.SaveInterruptedSessions;
 
         lock (_gate)
         {

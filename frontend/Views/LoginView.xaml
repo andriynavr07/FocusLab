@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Frontend.Services"
+             xmlns:ctl="clr-namespace:Frontend.Controls"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
@@ -48,15 +49,7 @@
                                     Background="{DynamicResource PrimaryBrush}"
                                     CornerRadius="{StaticResource CornerRadius12}">
 
-                                <Path Width="18"
-                                      Height="18"
-                                      Stretch="Uniform"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Stroke="{DynamicResource WhiteBrush}"
-                                      StrokeThickness="1.7"
-                                      StrokeLineJoin="Round"
-                                      Data="M 11,1 L 3,10 L 9,10 L 7,17 L 15,7 L 9,7 Z"/>
+                                <ctl:Icon Kind="ZapOff" Size="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
 
                             <TextBlock Text="FocusLab"
@@ -172,7 +165,7 @@
                     <TextBlock Text="{loc:Translate Text=&quot;Ел. пошта&quot;}"
                                Style="{StaticResource RegisterFieldLabelStyle}"/>
 
-                    <TextBox x:Name="EmailInput"
+                    <TextBox x:Name="EmailInput" ctl:FieldIcons.Leading="Mail" Padding="46,0,16,0"
                              Text="{Binding Email,
                                             Mode=TwoWay,
                                             UpdateSourceTrigger=PropertyChanged}"
@@ -185,7 +178,7 @@
                     <TextBlock Text="{loc:Translate Text=&quot;Пароль&quot;}"
                                Style="{StaticResource RegisterFieldLabelStyle}"/>
 
-                    <PasswordBox x:Name="PasswordInput"
+                    <PasswordBox x:Name="PasswordInput" ctl:FieldIcons.Leading="LockOpen" ctl:FieldIcons.Trailing="EyeOff" ctl:FieldIcons.TracksPassword="True" Tag="{loc:Translate Text=&quot;введіть пароль&quot;}" Padding="46,0,46,0"
                                  Margin="0,0,0,16"
                                  ToolTip="{loc:Translate Text=&quot;Введіть пароль&quot;}"
                                  AutomationProperties.Name="Пароль"

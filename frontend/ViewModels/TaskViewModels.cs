@@ -29,7 +29,6 @@ public class TaskRow : BoardBase
 {
     private string _status = "Todo";
     private string _title = "";
-    private string _project = "";
     private string _priorityKey = "Low";
     private string _description = "";
     private DateTime _dueDate = DateTime.Today;
@@ -50,7 +49,6 @@ public class TaskRow : BoardBase
     public int[] TagIds { get => _tagIds; set => SetField(ref _tagIds, value); }
     public TaskSubtaskDto[] Subtasks { get => _subtasks; set => SetField(ref _subtasks, value); }
     public string Title { get => _title; set => SetField(ref _title, value); }
-    public string Project { get => _project; set => SetField(ref _project, value); }
     public string PriorityKey
     {
         get => _priorityKey;
@@ -142,7 +140,6 @@ public class TasksViewModel : PageViewModelBase
     private readonly TaskBoardStore _store;
     private readonly ICatalogService _catalog;
     private string _selStatus = "Усі статуси";
-    private string _selProject = "Усі проєкти";
     private string _selPriority = "Усі пріоритети";
     private string _selSort = "Дедлайном";
     private bool _isAddOpen;
@@ -154,15 +151,12 @@ public class TasksViewModel : PageViewModelBase
     private bool _isDatePickerOpen;
     private TaskRow? _editingTask;
     private string _formError = string.Empty;
-    private bool _isProjectManagerOpen;
     private bool _isTagManagerOpen;
     private string _catalogName = string.Empty;
     private string _catalogColor = "#3B6EF5";
     private string _catalogError = string.Empty;
-    private ProjectDto? _selectedProjectRecord;
     private TagDto? _selectedTagRecord;
     private string _newSubtaskTitle = string.Empty;
-    private string _newProject;
     private PriorityOption _newPriority;
     private EstimateOption _newEstimate;
 
@@ -179,30 +173,24 @@ public class TasksViewModel : PageViewModelBase
             new PriorityOption("Critical", "Критичний")
         };
         EstimateOptions = new[] { 15, 25, 30, 45, 60, 90, 120, 180 }.Select(m => new EstimateOption(m)).ToArray();
-        _newProject = NoProject;
         _newPriority = Priorities[0];
         _newEstimate = EstimateOptions.First(o => o.Minutes == 60);
         Hours = Enumerable.Range(0, 24).ToArray();
         Minutes = new[] { 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55 };
 
-        View = new CollectionViewSource { Source = Rows }.View;
-        View.Filter = Filter;
         _store.Changed += (_, _) =>
             System.Windows.Application.Current.Dispatcher.InvokeAsync(RefreshView);
-        ApplySort();
+        // Нове/видалене завдання одразу потрапляє у список.
+        _store.Rows.CollectionChanged += (_, _) => RefreshView();
+        RefreshView();
 
         OpenNewTaskCommand = new RelayCommand(_ => OpenAdd());
         CloseAddCommand = new RelayCommand(_ => { IsDatePickerOpen = false; IsAddOpen = false; });
         SelectPriorityCommand = new RelayCommand(p => { if (p is PriorityOption o) NewPriority = o; });
         CreateTaskCommand = new RelayCommand(_ => Create());
         EditTaskCommand = new RelayCommand(task => { if (task is TaskRow row) OpenEdit(row); });
-        OpenProjectManagerCommand = new RelayCommand(async _ => await OpenProjectManagerAsync());
         OpenTagManagerCommand = new RelayCommand(async _ => await OpenTagManagerAsync());
-        CloseProjectManagerCommand = new RelayCommand(_ => IsProjectManagerOpen = false);
         CloseTagManagerCommand = new RelayCommand(_ => IsTagManagerOpen = false);
-        NewProjectCommand = new RelayCommand(_ => BeginNewProject());
-        SaveProjectCommand = new RelayCommand(async _ => await SaveProjectAsync());
-        DeleteProjectCommand = new RelayCommand(async _ => await DeleteProjectAsync());
         NewTagCommand = new RelayCommand(_ => BeginNewTag());
         SaveTagCommand = new RelayCommand(async _ => await SaveTagAsync());
         DeleteTagCommand = new RelayCommand(async _ => await DeleteTagAsync());
@@ -217,27 +205,22 @@ public class TasksViewModel : PageViewModelBase
         ToggleAllCommand = new RelayCommand(_ =>
         {
             var target = !AllDone;
-            foreach (var r in View.Cast<TaskRow>().ToList()) r.IsDone = target;
+            foreach (var r in VisibleRows.ToList()) r.IsDone = target;
         });
     }
 
     public ObservableCollection<TaskRow> Rows => _store.Rows;
-    public ICollectionView View { get; }
+    /// <summary>Відфільтровані та відсортовані рядки; перебудовується явно при кожній зміні сховища.</summary>
+    public ObservableCollection<TaskRow> VisibleRows { get; } = [];
 
     private static readonly string[] StatusFilterTexts = { "Усі статуси", "Завдання", "Виконується", "На перевірці", "Відкладено", "Виконано" };
     private static readonly string[] PriorityFilterTexts = { "Усі пріоритети", "Критичний", "Високий", "Середній", "Низький" };
     private static readonly string[] SortOptionTexts = { "Дедлайном", "Пріоритетом", "Датою створення", "Назвою" };
 
     public string[] StatusFilters => StatusFilterTexts.Select(UiPreferences.Instance.Translate).ToArray();
-    public ObservableCollection<string> ProjectFilters { get; } = ["Усі проєкти"];
     public string[] PriorityFilters => PriorityFilterTexts.Select(UiPreferences.Instance.Translate).ToArray();
     public string[] SortOptions => SortOptionTexts.Select(UiPreferences.Instance.Translate).ToArray();
-    public ObservableCollection<string> Projects { get; } = [];
 
-    /// <summary>Значення «Без проєкту» у випадному списку форми створення.</summary>
-    public const string NoProject = "Без проєкту";
-    public ObservableCollection<string> ProjectChoices { get; } = [NoProject];
-    public ObservableCollection<ProjectDto> ProjectRecords { get; } = [];
     public ObservableCollection<TagDto> TagRecords { get; } = [];
     public ObservableCollection<TagOption> TaskTagOptions { get; } = [];
     public ObservableCollection<TagOption> FilterTagOptions { get; } = [];
@@ -252,48 +235,42 @@ public class TasksViewModel : PageViewModelBase
     public string SelectedStatus
     {
         get => UiPreferences.Instance.Translate(_selStatus);
-        set { if (SetField(ref _selStatus, ResolveOption(value, StatusFilterTexts))) RefreshView(); }
-    }
-    public string SelectedProject
-    {
-        get => _selProject == "Усі проєкти" ? UiPreferences.Instance.Translate(_selProject) : _selProject;
         set
         {
-            var source = value == UiPreferences.Instance.Translate("Усі проєкти") ? "Усі проєкти" : value;
-            if (SetField(ref _selProject, source)) RefreshView();
+            // ComboBox пише null, коли список джерела перезавантажується — це не вибір користувача.
+            if (string.IsNullOrEmpty(value)) { OnPropertyChanged(); return; }
+            if (SetField(ref _selStatus, ResolveOption(value, StatusFilterTexts))) RefreshView();
         }
     }
     public string SelectedPriority
     {
         get => UiPreferences.Instance.Translate(_selPriority);
-        set { if (SetField(ref _selPriority, ResolveOption(value, PriorityFilterTexts))) RefreshView(); }
+        set
+        {
+            // ComboBox пише null, коли список джерела перезавантажується — це не вибір користувача.
+            if (string.IsNullOrEmpty(value)) { OnPropertyChanged(); return; }
+            if (SetField(ref _selPriority, ResolveOption(value, PriorityFilterTexts))) RefreshView();
+        }
     }
     public string SelectedSort
     {
         get => UiPreferences.Instance.Translate(_selSort);
-        set { if (SetField(ref _selSort, ResolveOption(value, SortOptionTexts))) ApplySort(); }
+        set
+        {
+            // ComboBox пише null, коли список джерела перезавантажується — це не вибір користувача.
+            if (string.IsNullOrEmpty(value)) { OnPropertyChanged(); return; }
+            if (SetField(ref _selSort, ResolveOption(value, SortOptionTexts))) ApplySort();
+        }
     }
 
-    public bool AllDone => View.Cast<TaskRow>().Any() && View.Cast<TaskRow>().All(r => r.IsDone);
-    public bool IsEmpty => View.IsEmpty;
+    public bool AllDone => VisibleRows.Count > 0 && VisibleRows.All(r => r.IsDone);
+    public bool IsEmpty => VisibleRows.Count == 0;
 
     public bool IsAddOpen { get => _isAddOpen; set => SetField(ref _isAddOpen, value); }
-    public bool IsProjectManagerOpen { get => _isProjectManagerOpen; set => SetField(ref _isProjectManagerOpen, value); }
     public bool IsTagManagerOpen { get => _isTagManagerOpen; set => SetField(ref _isTagManagerOpen, value); }
     public string CatalogName { get => _catalogName; set => SetField(ref _catalogName, value); }
     public string CatalogColor { get => _catalogColor; set => SetField(ref _catalogColor, value); }
     public string CatalogError { get => _catalogError; private set => SetField(ref _catalogError, value); }
-    public ProjectDto? SelectedProjectRecord
-    {
-        get => _selectedProjectRecord;
-        set
-        {
-            if (!SetField(ref _selectedProjectRecord, value) || value is null) return;
-            CatalogName = value.Name;
-            CatalogColor = value.Color;
-            CatalogError = string.Empty;
-        }
-    }
     public TagDto? SelectedTagRecord
     {
         get => _selectedTagRecord;
@@ -371,15 +348,6 @@ public class TasksViewModel : PageViewModelBase
     /// <summary>«22 ВЕР 2026 · 18:00».</summary>
     public string NewDueText => $"{Uk.ShortUpper(NewDueDate, withYear: true)} · {NewDueHour:00}:{NewDueMinute:00}";
 
-    public string NewProject
-    {
-        get => _newProject == NoProject ? UiPreferences.Instance.Translate(NoProject) : _newProject;
-        set
-        {
-            var source = value == UiPreferences.Instance.Translate(NoProject) ? NoProject : value;
-            SetField(ref _newProject, source);
-        }
-    }
     public PriorityOption NewPriority { get => _newPriority; set { if (value != null) SetField(ref _newPriority, value); } }
     public EstimateOption NewEstimate { get => _newEstimate; set { if (value != null) SetField(ref _newEstimate, value); } }
     public bool CanCreate => NewTitle.Trim().Length is >= 1 and <= 255;
@@ -393,13 +361,8 @@ public class TasksViewModel : PageViewModelBase
     public ICommand SelectPriorityCommand { get; }
     public ICommand CreateTaskCommand { get; }
     public ICommand EditTaskCommand { get; }
-    public ICommand OpenProjectManagerCommand { get; }
     public ICommand OpenTagManagerCommand { get; }
-    public ICommand CloseProjectManagerCommand { get; }
     public ICommand CloseTagManagerCommand { get; }
-    public ICommand NewProjectCommand { get; }
-    public ICommand SaveProjectCommand { get; }
-    public ICommand DeleteProjectCommand { get; }
     public ICommand NewTagCommand { get; }
     public ICommand SaveTagCommand { get; }
     public ICommand DeleteTagCommand { get; }
@@ -418,10 +381,8 @@ public class TasksViewModel : PageViewModelBase
         OnPropertyChanged(nameof(PriorityFilters));
         OnPropertyChanged(nameof(SortOptions));
         OnPropertyChanged(nameof(SelectedStatus));
-        OnPropertyChanged(nameof(SelectedProject));
         OnPropertyChanged(nameof(SelectedPriority));
         OnPropertyChanged(nameof(SelectedSort));
-        OnPropertyChanged(nameof(NewProject));
         OnPropertyChanged(nameof(FormTitle));
         OnPropertyChanged(nameof(SubmitButtonText));
         OnPropertyChanged(nameof(TitleValidationMessage));
@@ -430,26 +391,35 @@ public class TasksViewModel : PageViewModelBase
         foreach (var estimate in EstimateOptions)
             estimate.RefreshLanguage();
 
-        if (ProjectFilters.Count > 0)
-            ProjectFilters[0] = UiPreferences.Instance.Translate("Усі проєкти");
-        if (ProjectChoices.Count > 0)
-            ProjectChoices[0] = UiPreferences.Instance.Translate(NoProject);
         RefreshView();
     }
 
     private void RefreshView()
     {
-        View.Refresh();
+        IEnumerable<TaskRow> query = Rows.Where(Filter);
+        query = _selSort switch
+        {
+            "Назвою" => query.OrderBy(r => r.IsDone).ThenBy(r => r.Title, StringComparer.CurrentCultureIgnoreCase),
+            "Пріоритетом" => query.OrderBy(r => r.IsDone).ThenBy(r => r.PriorityRank),
+            "Датою створення" => query.OrderBy(r => r.IsDone).ThenBy(r => r.CreatedAt),
+            _ => query.OrderBy(r => r.IsDone).ThenBy(r => r.DueDate)
+        };
+        var items = query.ToList();
+        VisibleRows.Clear();
+        foreach (var item in items)
+            VisibleRows.Add(item);
         RaiseList();
     }
 
-    private bool Filter(object o)
+    private bool Filter(TaskRow r)
     {
-        var r = (TaskRow)o;
-        if (!string.IsNullOrWhiteSpace(SearchText) &&
-            !r.Title.Contains(SearchText, StringComparison.OrdinalIgnoreCase)) return false;
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var query = SearchText.Trim();
+            if (!r.Title.Contains(query, StringComparison.OrdinalIgnoreCase) &&
+                !r.Description.Contains(query, StringComparison.OrdinalIgnoreCase)) return false;
+        }
         if (SelectedStatus != StatusFilters[0] && r.StatusText != SelectedStatus) return false;
-        if (SelectedProject != ProjectFilters[0] && r.Project != SelectedProject) return false;
         if (SelectedPriority != PriorityFilters[0] &&
             !r.PriorityLabel.Equals(SelectedPriority, StringComparison.OrdinalIgnoreCase)) return false;
         var selectedTagIds = FilterTagOptions.Where(option => option.IsSelected).Select(option => option.Id).ToArray();
@@ -457,23 +427,7 @@ public class TasksViewModel : PageViewModelBase
         return true;
     }
 
-    private void ApplySort()
-    {
-        using (View.DeferRefresh())
-        {
-            View.SortDescriptions.Clear();
-            View.SortDescriptions.Add(new SortDescription(nameof(TaskRow.IsDone), ListSortDirection.Ascending));
-            var key = _selSort switch
-            {
-                "Назвою" => nameof(TaskRow.Title),
-                "Пріоритетом" => nameof(TaskRow.PriorityRank),
-                "Датою створення" => nameof(TaskRow.CreatedAt),
-                _ => nameof(TaskRow.DueDate)
-            };
-            View.SortDescriptions.Add(new SortDescription(key, ListSortDirection.Ascending));
-        }
-        RaiseList();
-    }
+    private void ApplySort() => RefreshView();
 
     private void RaiseList()
     {
@@ -502,7 +456,6 @@ public class TasksViewModel : PageViewModelBase
         NewDueDate = due.Date;
         NewDueHour = due.Hour;
         NewDueMinute = 0;
-        NewProject = NoProject;
         NewPriority = Priorities[0];
         NewEstimate = EstimateOptions.First(o => o.Minutes == 60);
         IsDatePickerOpen = false;
@@ -521,7 +474,6 @@ public class TasksViewModel : PageViewModelBase
         NewDueDate = row.DueDate.Date;
         NewDueHour = row.DueDate.Hour;
         NewDueMinute = row.DueDate.Minute;
-        NewProject = string.IsNullOrWhiteSpace(row.Project) ? NoProject : row.Project;
         NewPriority = Priorities.First(option => option.Key == row.PriorityKey);
         SetTaskTagSelection(row.TagIds);
         ChecklistItems.Clear();
@@ -551,7 +503,6 @@ public class TasksViewModel : PageViewModelBase
         {
             task.Title = NewTitle.Trim();
             task.Description = NewDescription.Trim();
-            task.Project = _newProject == NoProject ? string.Empty : _newProject;
             task.PriorityKey = NewPriority.Key;
             task.DueDate = NewDueDateTime;
             task.EstimatedMinutes = NewEstimate.Minutes;
@@ -564,7 +515,6 @@ public class TasksViewModel : PageViewModelBase
             {
                 Title = NewTitle.Trim(),
                 Description = NewDescription.Trim(),
-                Project = NewProject == UiPreferences.Instance.Translate(NoProject) ? string.Empty : NewProject,
                 PriorityKey = NewPriority.Key,
                 DueDate = NewDueDateTime,
                 CreatedAt = DateTime.Now,
@@ -588,28 +538,14 @@ public class TasksViewModel : PageViewModelBase
     {
         try
         {
-            var projects = await _catalog.GetProjectsAsync();
             var tags = await _catalog.GetTagsAsync();
-            Projects.Clear();
-            ProjectFilters.Clear();
-            ProjectFilters.Add(UiPreferences.Instance.Translate("Усі проєкти"));
-            ProjectChoices.Clear();
-            ProjectChoices.Add(UiPreferences.Instance.Translate(NoProject));
-            ProjectRecords.Clear();
-            foreach (var project in projects)
-            {
-                Projects.Add(project.Name);
-                ProjectFilters.Add(project.Name);
-                ProjectChoices.Add(project.Name);
-                ProjectRecords.Add(project);
-            }
             ReplaceTags(tags);
             RefreshView();
         }
         catch (Exception ex)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                MessageBox.Show($"{UiPreferences.Instance.Translate("Не вдалося завантажити проєкти й теги")}:\n{ex.Message}",
+                MessageBox.Show($"{UiPreferences.Instance.Translate("Не вдалося завантажити теги")}:\n{ex.Message}",
                     "FocusLab", MessageBoxButton.OK, MessageBoxImage.Error));
         }
     }
@@ -636,26 +572,11 @@ public class TasksViewModel : PageViewModelBase
             option.IsSelected = selected.Contains(option.Id);
     }
 
-    private async Task OpenProjectManagerAsync()
-    {
-        await LoadCatalogAsync();
-        CatalogError = string.Empty;
-        IsProjectManagerOpen = true;
-    }
-
     private async Task OpenTagManagerAsync()
     {
         await LoadCatalogAsync();
         CatalogError = string.Empty;
         IsTagManagerOpen = true;
-    }
-
-    private void BeginNewProject()
-    {
-        SelectedProjectRecord = null;
-        CatalogName = string.Empty;
-        CatalogColor = ColorOptions[0];
-        CatalogError = string.Empty;
     }
 
     private void BeginNewTag()
@@ -664,51 +585,6 @@ public class TasksViewModel : PageViewModelBase
         CatalogName = string.Empty;
         CatalogColor = ColorOptions[0];
         CatalogError = string.Empty;
-    }
-
-    private async Task SaveProjectAsync()
-    {
-        try
-        {
-            var oldName = SelectedProjectRecord?.Name;
-            var saved = await _catalog.SaveProjectAsync(
-                new ProjectDto(SelectedProjectRecord?.Id ?? 0, CatalogName, CatalogColor));
-            foreach (var row in Rows.Where(row => oldName is not null && row.Project == oldName))
-                row.Project = saved.Name;
-            if (SelectedProject == oldName)
-                SelectedProject = saved.Name;
-            await LoadCatalogAsync();
-            SelectedProjectRecord = ProjectRecords.First(item => item.Id == saved.Id);
-            CatalogError = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            CatalogError = ex.Message;
-        }
-    }
-
-    private async Task DeleteProjectAsync()
-    {
-        if (SelectedProjectRecord is not { } project) return;
-        if (MessageBox.Show(string.Format(UiPreferences.Instance.Translate(
-                    "Видалити проєкт «{0}»? Завдання залишаться без проєкту."), project.Name),
-                UiPreferences.Instance.Translate("Підтвердження видалення"),
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
-
-        try
-        {
-            await _catalog.DeleteProjectAsync(project.Id);
-            foreach (var row in Rows.Where(row => row.Project == project.Name))
-                row.Project = string.Empty;
-            SelectedProject = ProjectFilters[0];
-            await LoadCatalogAsync();
-            BeginNewProject();
-        }
-        catch (Exception ex)
-        {
-            CatalogError = ex.Message;
-        }
     }
 
     private async Task SaveTagAsync()
@@ -752,7 +628,6 @@ public class TasksViewModel : PageViewModelBase
     {
         SearchText = string.Empty;
         SelectedStatus = StatusFilters[0];
-        SelectedProject = ProjectFilters[0];
         SelectedPriority = PriorityFilters[0];
         foreach (var option in FilterTagOptions)
             option.IsSelected = false;

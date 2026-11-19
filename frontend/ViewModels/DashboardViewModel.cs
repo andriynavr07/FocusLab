@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -29,7 +31,6 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     private bool _activityLoading;
     private bool _activityDirty;
     private bool _disposed;
-    private string _selectedProjectFilter = "Усі проєкти";
     private string _selectedPriorityFilter = "Усі пріоритети";
 
     public DashboardViewModel(
@@ -46,6 +47,10 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         _timer.FocusSessionFinished += OnFocusSessionFinished;
 
         CloseDetailsCommand = new RelayCommand(_ => IsDetailsOpen = false);
+        AttachFileCommand = new RelayCommand(_ => AttachFile());
+        AttachFolderCommand = new RelayCommand(_ => AttachFolder());
+        RemoveAttachmentCommand = new RelayCommand(p => RemoveAttachment(p as AttachmentItem));
+        OpenAttachmentCommand = new RelayCommand(p => OpenAttachment(p as AttachmentItem));
         StartTaskFocusCommand = new RelayCommand(_ =>
         {
             if (SelectedTask is { IsDone: false })
@@ -76,7 +81,6 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         ResetBoardFiltersCommand = new RelayCommand(_ =>
         {
             SearchText = string.Empty;
-            SelectedProjectFilter = ProjectFilters[0];
             SelectedPriorityFilter = PriorityFilters[0];
             foreach (var tag in TagFilters)
                 tag.IsSelected = false;
@@ -116,7 +120,6 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     }
 
     public ObservableCollection<DashboardColumn> Columns { get; } = new();
-    public ObservableCollection<string> ProjectFilters { get; } = ["Усі проєкти"];
     public ObservableCollection<TagOption> TagFilters { get; } = [];
     private static readonly string[] PriorityFilterTexts = ["Усі пріоритети", "Критичний", "Високий", "Середній", "Низький"];
     public string[] PriorityFilters => PriorityFilterTexts.Select(UiPreferences.Instance.Translate).ToArray();
@@ -133,21 +136,101 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         }
     }
 
-    public bool IsDetailsOpen { get => _isDetailsOpen; set => SetField(ref _isDetailsOpen, value); }
-    public string SelectedProjectFilter
+    // ───── вкладення задачі (файли, папки, посилання) ─────
+
+    public ObservableCollection<AttachmentItem> Files { get; } = [];
+    public ObservableCollection<AttachmentItem> Links { get; } = [];
+    public string FilesCountText => $"{Files.Count} {Uk.Plural(Files.Count, "ресурс", "ресурси", "ресурсів")}";
+    public string LinksCountText => $"{Links.Count} {Uk.Plural(Links.Count, "посилання", "посилання", "посилань")}";
+    public bool HasFiles => Files.Count > 0;
+    public bool HasLinks => Links.Count > 0;
+
+    public ICommand AttachFileCommand { get; }
+    public ICommand AttachFolderCommand { get; }
+    public ICommand RemoveAttachmentCommand { get; }
+    public ICommand OpenAttachmentCommand { get; }
+
+    private void LoadAttachments()
     {
-        get => UiPreferences.Instance.Translate(_selectedProjectFilter);
-        set
+        Files.Clear();
+        Links.Clear();
+        if (SelectedTask is { Id: not 0 } task)
         {
-            var source = value == UiPreferences.Instance.Translate("Усі проєкти") ? "Усі проєкти" : value;
-            if (SetField(ref _selectedProjectFilter, source)) RefreshBoard();
+            foreach (var attachment in TaskAttachmentStore.Instance.GetFor(task.Id))
+                (attachment.Kind == AttachmentKind.Link ? Links : Files).Add(new AttachmentItem(attachment));
+        }
+
+        OnPropertyChanged(nameof(FilesCountText));
+        OnPropertyChanged(nameof(LinksCountText));
+        OnPropertyChanged(nameof(HasFiles));
+        OnPropertyChanged(nameof(HasLinks));
+    }
+
+    private void AttachFile()
+    {
+        if (SelectedTask is not { Id: not 0 } task) return;
+        var dialog = new Microsoft.Win32.OpenFileDialog { Multiselect = true };
+        if (dialog.ShowDialog() != true) return;
+
+        foreach (var path in dialog.FileNames)
+        {
+            TaskAttachmentStore.Instance.Add(new TaskAttachment
+            {
+                TaskId = task.Id,
+                Kind = AttachmentKind.File,
+                Name = Path.GetFileName(path),
+                Target = path,
+                SizeBytes = new FileInfo(path).Length
+            });
+        }
+
+        LoadAttachments();
+    }
+
+    private void AttachFolder()
+    {
+        if (SelectedTask is not { Id: not 0 } task) return;
+        var dialog = new Microsoft.Win32.OpenFolderDialog();
+        if (dialog.ShowDialog() != true) return;
+
+        TaskAttachmentStore.Instance.Add(new TaskAttachment
+        {
+            TaskId = task.Id,
+            Kind = AttachmentKind.Folder,
+            Name = new DirectoryInfo(dialog.FolderName).Name,
+            Target = dialog.FolderName
+        });
+        LoadAttachments();
+    }
+
+    private void RemoveAttachment(AttachmentItem? item)
+    {
+        if (item is null) return;
+        TaskAttachmentStore.Instance.Remove(item.Model.Id);
+        LoadAttachments();
+    }
+
+    private static void OpenAttachment(AttachmentItem? item)
+    {
+        if (item is null) return;
+        try
+        {
+            Process.Start(new ProcessStartInfo(item.Target) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, UiPreferences.Instance.Translate("Не вдалося відкрити"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
+
+    public bool IsDetailsOpen { get => _isDetailsOpen; set => SetField(ref _isDetailsOpen, value); }
     public string SelectedPriorityFilter
     {
         get => UiPreferences.Instance.Translate(_selectedPriorityFilter);
         set
         {
+            if (string.IsNullOrEmpty(value)) { OnPropertyChanged(); return; }
             var source = PriorityFilterTexts.FirstOrDefault(item => UiPreferences.Instance.Translate(item) == value) ?? value;
             if (SetField(ref _selectedPriorityFilter, source)) RefreshBoard();
         }
@@ -179,9 +262,6 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     {
         OnPropertyChanged(nameof(PriorityFilters));
         OnPropertyChanged(nameof(SelectedPriorityFilter));
-        OnPropertyChanged(nameof(SelectedProjectFilter));
-        if (ProjectFilters.Count > 0)
-            ProjectFilters[0] = UiPreferences.Instance.Translate("Усі проєкти");
         foreach (var statistic in Statistics)
             statistic.RefreshLanguage();
         foreach (var column in Columns)
@@ -195,13 +275,8 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     {
         try
         {
-            var projects = await _catalog.GetProjectsAsync();
             var tags = await _catalog.GetTagsAsync();
             var selectedTagIds = TagFilters.Where(tag => tag.IsSelected).Select(tag => tag.Id).ToHashSet();
-            ProjectFilters.Clear();
-            ProjectFilters.Add("Усі проєкти");
-            foreach (var project in projects)
-                ProjectFilters.Add(project.Name);
             TagFilters.Clear();
             foreach (var tag in tags)
             {
@@ -210,8 +285,6 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
                 option.PropertyChanged += (_, _) => RefreshBoard();
                 TagFilters.Add(option);
             }
-            if (!ProjectFilters.Contains(SelectedProjectFilter))
-                SelectedProjectFilter = ProjectFilters[0];
             RefreshBoard();
         }
         catch (Exception ex)
@@ -270,6 +343,7 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     private void OpenTask(TaskRow row)
     {
         SelectedTask = row;
+        LoadAttachments();
         IsDetailsOpen = true;
     }
 
@@ -400,12 +474,11 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
 
     private bool MatchesSearch(TaskRow row) =>
         string.IsNullOrWhiteSpace(SearchText)
-        || row.Title.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+        || row.Title.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase)
+        || row.Description.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase);
 
     private bool MatchesBoardFilters(TaskRow row)
     {
-        if (_selectedProjectFilter != "Усі проєкти" && row.Project != _selectedProjectFilter)
-            return false;
         if (_selectedPriorityFilter != "Усі пріоритети"
             && !row.PriorityLabel.Equals(UiPreferences.Instance.Translate(_selectedPriorityFilter), StringComparison.OrdinalIgnoreCase))
             return false;
@@ -444,7 +517,6 @@ public class DashboardColumn(string title, string status, IEnumerable<DashboardT
 public class DashboardTask(TaskRow task, ICommand openCommand, ICommand focusCommand)
 {
     public TaskRow Row { get; } = task;
-    public string Project => Row.Project;
     public string Priority => Row.PriorityLabel;
     public string Title => Row.Title;
     public string DueDate => Row.IsDone

@@ -26,6 +26,9 @@ public class WorkspaceViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Кількість невиконаних завдань — показується бейджем біля пункту «Завдання».</summary>
+    public int PendingTaskCount => _taskStore.Rows.Count(r => !r.IsDone);
+
     public ICommand ShowDashboardCommand { get; }
     public ICommand ShowTasksCommand { get; }
     public ICommand ShowCalendarCommand { get; }
@@ -51,10 +54,20 @@ public class WorkspaceViewModel : ViewModelBase
         _calendar = new CalendarViewModel(_taskStore);
         _settings = new SettingsViewModel(_timer, auth ?? throw new ArgumentNullException(nameof(auth)));
         _currentPage = _dashboard;
+        _taskStore.Changed += OnTasksChanged;
         _dashboard.EditTaskRequested += OpenEditTask;
 
-        foreach (var page in new PageViewModelBase[] { _dashboard, _tasks, _calendar, _timer, _settings })
+        var pages = new PageViewModelBase[] { _dashboard, _tasks, _calendar, _timer, _settings };
+        foreach (var page in pages)
+        {
             page.NewTaskRequested += OpenNewTask;
+            page.SearchTextChanged += text =>
+            {
+                foreach (var other in pages)
+                    if (other.SearchText != text)
+                        other.SearchText = text;
+            };
+        }
 
         ShowDashboardCommand = new RelayCommand(async _ =>
         {
@@ -70,21 +83,33 @@ public class WorkspaceViewModel : ViewModelBase
             _timer.PauseCommand.Execute(null);
             // TimerViewModel підписаний на події singleton-сервісу таймера — відписуємось,
             // інакше після кожного виходу старий VM лишався б у пам'яті.
+            _taskStore.Changed -= OnTasksChanged;
             _timer.Dispose();
             _dashboard.Dispose();
             _onLogout();
         });
     }
 
+    private void OnTasksChanged(object? sender, EventArgs e)
+    {
+        // Зміна може прийти не з UI-потоку (після завантаження з БД) — оновлюємо через Dispatcher.
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is null || dispatcher.CheckAccess())
+            OnPropertyChanged(nameof(PendingTaskCount));
+        else
+            dispatcher.BeginInvoke(() => OnPropertyChanged(nameof(PendingTaskCount)));
+    }
+
+    public TasksViewModel Tasks => _tasks;
+
     private void OpenNewTask()
     {
-        CurrentPage = _tasks;
+        // Форму показує TaskFormModal поверх поточної сторінки — залишаємось там, де користувач був.
         _tasks.OpenNewTaskCommand.Execute(null);
     }
 
     private void OpenEditTask(TaskRow row)
     {
-        CurrentPage = _tasks;
         _tasks.OpenEditTask(row);
     }
 }

@@ -103,6 +103,38 @@ namespace FocusLab.Infrastructure.Persistence.Migrations
                     b.ToTable("focus_sessions", (string)null);
                 });
 
+            modelBuilder.Entity("FocusLab.Domain.Entities.Project", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AccountId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("color");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_projects_account_name");
+
+                    b.ToTable("projects", (string)null);
+                });
+
             modelBuilder.Entity("FocusLab.Domain.Entities.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -146,6 +178,11 @@ namespace FocusLab.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("completed_at");
+
+                    b.Property<string>("ChecklistJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("checklist_json");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
@@ -254,6 +291,17 @@ namespace FocusLab.Infrastructure.Persistence.Migrations
                     b.Navigation("Task");
                 });
 
+            modelBuilder.Entity("FocusLab.Domain.Entities.Project", b =>
+                {
+                    b.HasOne("FocusLab.Domain.Entities.Account", "Account")
+                        .WithMany("Projects")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+                });
+
             modelBuilder.Entity("FocusLab.Domain.Entities.Tag", b =>
                 {
                     b.HasOne("FocusLab.Domain.Entities.Account", "Account")
@@ -308,6 +356,8 @@ namespace FocusLab.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("FocusLab.Domain.Entities.Account", b =>
                 {
+                    b.Navigation("Projects");
+
                     b.Navigation("Tags");
 
                     b.Navigation("Tasks");

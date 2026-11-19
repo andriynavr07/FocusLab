@@ -12,5 +12,6 @@ public interface ITaskRepository
     Task<TaskItem?> GetByIdAsync(int id, CancellationToken ct = default);
     Task AddAsync(TaskItem task, CancellationToken ct = default);
     Task UpdateAsync(TaskItem task, CancellationToken ct = default);
+    Task SetTagsAsync(int taskId, IReadOnlyCollection<int> tagIds, CancellationToken ct = default);
     Task DeleteAsync(int id, CancellationToken ct = default);
 }

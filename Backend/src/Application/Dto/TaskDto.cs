@@ -17,4 +17,8 @@ public class TaskDto
     public TaskStatus Status { get; set; } = TaskStatus.Todo;
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public List<int> TagIds { get; set; } = [];
+    public List<TaskSubtaskDto> Subtasks { get; set; } = [];
 }
+
+public sealed record TaskSubtaskDto(string Id, string Title, bool IsDone);

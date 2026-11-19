@@ -69,8 +69,17 @@ public abstract class PageViewModelBase : BoardBase
     public string SearchText
     {
         get => _searchText;
-        set { if (SetField(ref _searchText, value)) OnSearchChanged(); }
+        set
+        {
+            value ??= string.Empty;
+            if (!SetField(ref _searchText, value)) return;
+            OnSearchChanged();
+            SearchTextChanged?.Invoke(value);
+        }
     }
+
+    /// <summary>Пошук спільний для всіх сторінок: Workspace переносить введений текст на решту.</summary>
+    public event Action<string>? SearchTextChanged;
 
     public bool IsNotificationsOpen { get => _isNotificationsOpen; set => SetField(ref _isNotificationsOpen, value); }
 

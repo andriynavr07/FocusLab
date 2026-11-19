@@ -17,6 +17,7 @@ public class TaskItem
     public TaskStatus Status { get; set; } = TaskStatus.Todo;
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public string ChecklistJson { get; set; } = "[]";
 
     public Account Account { get; set; } = null!;
     public ICollection<TaskTag> TaskTags { get; set; } = new List<TaskTag>();

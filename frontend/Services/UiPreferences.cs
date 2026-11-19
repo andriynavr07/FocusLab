@@ -247,7 +247,7 @@ public sealed class UiPreferences : INotifyPropertyChanged
             ["Не вдалося прочитати акаунт"] = "Could not read the account",
             ["Не вдалося завантажити профіль"] = "Could not load the profile",
             ["Не вдалося завантажити фільтри"] = "Could not load filters",
-            ["Не вдалося завантажити проєкти й теги"] = "Could not load projects and tags",
+            ["Не вдалося завантажити теги"] = "Could not load tags",
             ["Видалити завдання «{0}»?"] = "Delete task “{0}”?",
             ["Підтвердження видалення"] = "Confirm deletion",
             ["Видалити проєкт «{0}»? Завдання залишаться без проєкту."] = "Delete project “{0}”? Tasks will no longer be assigned to a project.",

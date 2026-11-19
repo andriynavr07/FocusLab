@@ -34,6 +34,7 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.Property(t => t.CompletedAt).HasColumnName("completed_at")
             .HasConversion(new NullableUtcDateTimeConverter());
+        builder.Property(t => t.ChecklistJson).HasColumnName("checklist_json").IsRequired();
 
         builder.HasOne(t => t.Account)
             .WithMany(a => a.Tasks)

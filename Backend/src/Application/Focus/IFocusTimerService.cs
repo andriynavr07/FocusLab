@@ -42,7 +42,7 @@ public interface IFocusTimerService
     void Resume();
 
     /// <summary>Достроково перериває інтервал і повертає таймер у Idle (фаза Focus).</summary>
-    Task StopAsync();
+    Task StopAsync(bool? saveInterruptedSession = null);
 
     /// <summary>Пропускає перерву (SC-07, A1): наступна фокус-сесія стартує вручну.</summary>
     void SkipBreak();

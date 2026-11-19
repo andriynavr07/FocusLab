@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctl="clr-namespace:Frontend.Controls"
                     xmlns:converters="clr-namespace:Frontend.Converters">
 
     <BooleanToVisibilityConverter x:Key="FlBoolToVis"/>
@@ -145,8 +146,36 @@
         </Setter>
     </Style>
 
+    <!-- Однорядкове поле пошуку: текст і підказка по центру по вертикалі, на одному рівні з лупою -->
     <Style x:Key="FlSearchBox" TargetType="TextBox" BasedOn="{StaticResource FlTextBox}">
-        <Setter Property="Padding" Value="42,10,12,10"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="Padding" Value="38,0,12,0"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                            CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <Grid>
+                            <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="Ph" Text="{TemplateBinding Tag}" Foreground="{DynamicResource FlMuted}"
+                                       IsHitTestVisible="False" Visibility="Collapsed"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Text" Value="">
+                            <Setter TargetName="Ph" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource FlAccent}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ===== ComboBox ===== -->
@@ -194,9 +223,7 @@
                                           ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                           TextElement.Foreground="{TemplateBinding Foreground}"/>
-                        <TextBlock Text="&#xE70D;" FontFamily="{StaticResource FlIcons}" FontSize="11"
-                                   Foreground="{DynamicResource FlMuted}" HorizontalAlignment="Right"
-                                   VerticalAlignment="Center" Margin="0,0,14,0" IsHitTestVisible="False"/>
+                        <ctl:Icon Kind="ChevronDown" Size="12" Foreground="{DynamicResource FlMuted}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,14,0"/>
                         <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True"
                                Focusable="False" PopupAnimation="Fade">
                             <Border MinWidth="{Binding ActualWidth, ElementName=Root}" MaxHeight="260" Margin="0,4,0,0" Padding="4"

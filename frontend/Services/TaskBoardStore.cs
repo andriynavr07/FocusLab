@@ -18,7 +18,7 @@ public sealed class TaskBoardStore
 {
     private static readonly HashSet<string> PersistedProperties =
     [
-        nameof(TaskRow.Title), nameof(TaskRow.Project), nameof(TaskRow.PriorityKey),
+        nameof(TaskRow.Title), nameof(TaskRow.PriorityKey),
         nameof(TaskRow.Description), nameof(TaskRow.DueDate), nameof(TaskRow.Status),
         nameof(TaskRow.EstimatedMinutes), nameof(TaskRow.TagIds), nameof(TaskRow.Subtasks)
     ];
@@ -99,6 +99,8 @@ public sealed class TaskBoardStore
             return false;
 
         Rows.Remove(row);
+        if (row.Id != 0)
+            TaskAttachmentStore.Instance.RemoveForTask(row.Id);
         Enqueue(async () =>
         {
             if (row.Id != 0)
@@ -155,7 +157,6 @@ public sealed class TaskBoardStore
         Subtasks = dto.Subtasks.ToArray(),
         Title = dto.Title,
         Description = dto.Description ?? string.Empty,
-        Project = dto.Project ?? string.Empty,
         PriorityKey = dto.Priority switch
         {
             Priority.Critical => "Critical",
@@ -176,7 +177,6 @@ public sealed class TaskBoardStore
         Id = row.Id,
         Title = row.Title,
         Description = string.IsNullOrWhiteSpace(row.Description) ? null : row.Description,
-        Project = string.IsNullOrWhiteSpace(row.Project) ? null : row.Project,
         Priority = row.PriorityKey switch
         {
             "Critical" => Priority.Critical,

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FocusLab.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+40b3c0588e12a89b71c791d646b4ccc466e8f1fe")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fb894ab403670170c7dfb5d6055693dfd167ed11")]
 [assembly: System.Reflection.AssemblyProductAttribute("FocusLab.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FocusLab.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

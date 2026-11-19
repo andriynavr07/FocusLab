@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctl="clr-namespace:Frontend.Controls">
 
     <!-- Перемикач (toggle switch) -->
     <Style x:Key="FlSwitch" TargetType="CheckBox">
@@ -34,9 +35,7 @@
                 <ControlTemplate TargetType="CheckBox">
                     <Border x:Name="Bx" Width="20" Height="20" CornerRadius="6" BorderThickness="1"
                             Background="{DynamicResource FlSurface2}" BorderBrush="{DynamicResource FlLine}">
-                        <TextBlock x:Name="Tick" Text="&#xE73E;" FontFamily="{StaticResource FlIcons}" FontSize="11"
-                                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Visibility="Collapsed"/>
+                        <ctl:Icon Kind="Check" Size="12" x:Name="Tick" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -146,9 +145,7 @@
                             BorderBrush="Transparent" Background="Transparent">
                         <Grid>
                             <ContentPresenter TextElement.Foreground="{DynamicResource FlText}"/>
-                            <TextBlock x:Name="Tick" Text="&#xE73E;" FontFamily="{StaticResource FlIcons}"
-                                       Foreground="{DynamicResource FlAccent}" HorizontalAlignment="Right"
-                                       VerticalAlignment="Center" Visibility="Collapsed"/>
+                            <ctl:Icon Kind="Check" Size="14" x:Name="Tick" Foreground="{DynamicResource FlAccent}" HorizontalAlignment="Right" VerticalAlignment="Center" Visibility="Collapsed"/>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>

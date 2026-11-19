@@ -9,12 +9,11 @@ public class CalendarEvent : BoardBase
     public string Title { get; init; } = "";
     public TimeSpan Start { get; init; }
     public int Minutes { get; init; }
-    public string Project { get; init; } = "";
     public string Kind { get; init; } = "Accent"; // Accent | Success | Danger
     public bool IsDone { get; init; }
 
     public string TimeRange => $"{Start:hh\\:mm} - {Start.Add(TimeSpan.FromMinutes(Minutes)):hh\\:mm}";
-    public string Meta => $"{Duration} • {(string.IsNullOrWhiteSpace(Project) ? UiPreferences.Instance.Translate("Без проєкту") : Project)}";
+    public string Meta => Duration;
 
     private string Duration => Minutes % 60 == 0
         ? $"{Minutes / 60} {Uk.Plural(Minutes / 60, "година", "години", "годин")}"
@@ -195,7 +194,7 @@ public class CalendarViewModel : PageViewModelBase
         foreach (var e in EventsFor(_selected))
         {
             if (!string.IsNullOrWhiteSpace(SearchText) &&
-                !($"{e.Title} {e.Project}".Contains(SearchText, StringComparison.OrdinalIgnoreCase))) continue;
+                !(e.Title.Contains(SearchText, StringComparison.OrdinalIgnoreCase))) continue;
             SelectedEvents.Add(e);
         }
 
@@ -219,7 +218,6 @@ public class CalendarViewModel : PageViewModelBase
             Title = row.Title,
             Start = new TimeSpan(startHour, 0, 0),
             Minutes = 25,
-            Project = row.Project,
             Kind = row.IsDone ? "Success" : row.IsOverdue ? "Danger" : "Accent",
             IsDone = row.IsDone
         };

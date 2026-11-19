@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Application\FocusLab.Application.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\FocusLab.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
