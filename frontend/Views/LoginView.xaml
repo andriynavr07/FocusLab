@@ -90,7 +90,7 @@
                                 VerticalAlignment="Center">
 
                         <Border Height="220"
-                                Background="{DynamicResource FlSurface2}"
+                                Background="{DynamicResource FlSurface}"
                                 BorderBrush="{DynamicResource FlLine}"
                                 BorderThickness="1"
                                 CornerRadius="{StaticResource CornerRadius16}">

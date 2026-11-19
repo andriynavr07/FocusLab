@@ -211,14 +211,14 @@
                     <MouseBinding MouseAction="LeftClick" Command="{Binding CloseAddCommand}"/>
                 </Border.InputBindings>
             </Border>
-            <Border Width="500" MaxHeight="700" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+            <Border Width="520" MaxHeight="700" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
                     Background="{DynamicResource FlSurface}" BorderBrush="{DynamicResource FlLine}"
-                    BorderThickness="1" CornerRadius="20" Padding="30,28,30,30">
+                    BorderThickness="1" CornerRadius="16" Padding="32">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <!-- Заголовок + кнопка закриття -->
                     <Grid>
-                        <TextBlock Text="{Binding FormTitle}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding FormTitle}" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
                         <Button HorizontalAlignment="Right" Style="{StaticResource FlIconButton}" Content="&#xE711;"
                                 Width="34" Height="34" Padding="0" FontSize="13"
                                 Background="{DynamicResource FlSurface2}" BorderBrush="{DynamicResource FlLine}"
