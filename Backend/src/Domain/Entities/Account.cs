@@ -13,4 +13,5 @@ public class Account
 
     public ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+    public ICollection<Project> Projects { get; set; } = new List<Project>();
 }

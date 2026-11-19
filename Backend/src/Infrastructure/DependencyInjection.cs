@@ -13,6 +13,9 @@ public static class DependencyInjection
         services.AddDbContextFactory<AppDbContext>(options => options.UseSqlite(AppPaths.ConnectionString));
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<ITaskRepository, TaskRepository>();
+        services.AddSingleton<ICatalogService, CatalogService>();
+        services.AddSingleton<IFocusSessionRepository, FocusSessionRepository>();
+        services.AddSingleton<IFocusSettingsProvider>(_ => new JsonFocusSettingsProvider(AppPaths.SettingsFile));
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<ICurrentAccount, CurrentAccount>();
         services.AddSingleton<IAccountRepository, AccountRepository>();

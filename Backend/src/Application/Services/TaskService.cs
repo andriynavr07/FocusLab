@@ -1,6 +1,7 @@
 using FocusLab.Application.Abstractions;
 using FocusLab.Application.Dto;
 using FocusLab.Domain.Entities;
+using System.Text.Json;
 using TaskStatus = FocusLab.Domain.Enums.TaskStatus;
 
 namespace FocusLab.Application.Services;
@@ -8,6 +9,7 @@ namespace FocusLab.Application.Services;
 public class TaskService : ITaskService
 {
     public const int MaxTitleLength = 255;
+    public const int MaxProjectLength = 100;
 
     private readonly ITaskRepository _repository;
     private readonly IClock _clock;
@@ -33,10 +35,14 @@ public class TaskService : ITaskService
             AccountId = task.AccountId,
             Title = ValidateTitle(task.Title),
             Description = task.Description,
+            Project = NormalizeProject(task.Project),
             Deadline = task.Deadline,
+            EstimatedMinutes = NormalizeEstimate(task.EstimatedMinutes),
             Priority = task.Priority,
             Status = TaskStatus.Todo,          // нова задача завжди починає з Todo
-            CreatedAt = _clock.UtcNow          // час береться з IClock, а не з DateTime.UtcNow
+            CreatedAt = _clock.UtcNow,         // час береться з IClock, а не з DateTime.UtcNow
+            TaskTags = task.TagIds.Distinct().Select(tagId => new TaskTag { TagId = tagId }).ToList(),
+            ChecklistJson = SerializeSubtasks(task.Subtasks)
         };
 
         await _repository.AddAsync(entity, ct);
@@ -52,7 +58,10 @@ public class TaskService : ITaskService
 
         entity.Title = ValidateTitle(task.Title);
         entity.Description = task.Description;
+        entity.Project = NormalizeProject(task.Project);
         entity.Deadline = task.Deadline;
+        entity.EstimatedMinutes = NormalizeEstimate(task.EstimatedMinutes);
+        entity.ChecklistJson = SerializeSubtasks(task.Subtasks);
         entity.Priority = task.Priority;
 
         if (task.Status != entity.Status)
@@ -62,6 +71,10 @@ public class TaskService : ITaskService
         }
 
         await _repository.UpdateAsync(entity, ct);
+        await _repository.SetTagsAsync(entity.Id, task.TagIds, ct);
+        entity.TaskTags = task.TagIds.Distinct()
+            .Select(tagId => new TaskTag { TaskId = entity.Id, TagId = tagId })
+            .ToList();
         return ToDto(entity);
     }
 
@@ -80,16 +93,39 @@ public class TaskService : ITaskService
         return trimmed;
     }
 
+    private static int? NormalizeEstimate(int? minutes)
+        => minutes is > 0 ? minutes : null;
+
+    private static string? NormalizeProject(string? project)
+    {
+        if (string.IsNullOrWhiteSpace(project)) return null;
+        var trimmed = project.Trim();
+        return trimmed.Length <= MaxProjectLength
+            ? trimmed
+            : throw new ArgumentException($"Назва проєкту не може бути довшою за {MaxProjectLength} символів.", nameof(project));
+    }
+
     private static TaskDto ToDto(TaskItem t) => new()
     {
         Id = t.Id,
         AccountId = t.AccountId,
         Title = t.Title,
         Description = t.Description,
+        Project = t.Project,
         Deadline = t.Deadline,
+        EstimatedMinutes = t.EstimatedMinutes,
         Priority = t.Priority,
         Status = t.Status,
         CreatedAt = t.CreatedAt,
-        CompletedAt = t.CompletedAt
+        CompletedAt = t.CompletedAt,
+        TagIds = t.TaskTags.Select(taskTag => taskTag.TagId).ToList(),
+        Subtasks = DeserializeSubtasks(t.ChecklistJson)
     };
+
+    private static string SerializeSubtasks(IEnumerable<TaskSubtaskDto> subtasks)
+        => JsonSerializer.Serialize(subtasks);
+
+    private static List<TaskSubtaskDto> DeserializeSubtasks(string json)
+        => JsonSerializer.Deserialize<List<TaskSubtaskDto>>(json)
+            ?? throw new InvalidOperationException("Не вдалося прочитати чек-лист задачі.");
 }

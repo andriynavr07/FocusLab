@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
     public DbSet<Tag> Tags => Set<Tag>();
+    public DbSet<Project> Projects => Set<Project>();
     public DbSet<TaskTag> TaskTags => Set<TaskTag>();
     public DbSet<TaskResource> TaskResources => Set<TaskResource>();
     public DbSet<FocusSession> FocusSessions => Set<FocusSession>();

@@ -10,9 +10,15 @@ public class TaskDto
     public int AccountId { get; set; } = Account.LocalAccountId;
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? Project { get; set; }
     public DateTime? Deadline { get; set; }
+    public int? EstimatedMinutes { get; set; }
     public Priority Priority { get; set; } = Priority.Medium;
     public TaskStatus Status { get; set; } = TaskStatus.Todo;
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public List<int> TagIds { get; set; } = [];
+    public List<TaskSubtaskDto> Subtasks { get; set; } = [];
 }
+
+public sealed record TaskSubtaskDto(string Id, string Title, bool IsDone);

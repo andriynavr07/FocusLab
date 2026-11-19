@@ -1,4 +1,4 @@
-﻿using FocusLab.Application.Abstractions;
+using FocusLab.Application.Abstractions;
 using FocusLab.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +14,12 @@ public class AccountRepository : IAccountRepository
     {
         await using var db = await _factory.CreateDbContextAsync(ct);
         return await db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == Account.LocalAccountId, ct);
+    }
+
+    public async Task<Account?> GetByIdAsync(int id, CancellationToken ct = default)
+    {
+        await using var db = await _factory.CreateDbContextAsync(ct);
+        return await db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id, ct);
     }
 
     public async Task<Account?> GetByEmailAsync(string email, CancellationToken ct = default)

@@ -1,11 +1,12 @@
 using System.Windows.Input;
+using FocusLab.Application.Abstractions;
 using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
 public class RegisterViewModel : PageViewModelBase
 {
-    private readonly LocalAuthSession _auth;
+    private readonly IAuthService _auth;
     private string _name = string.Empty;
     private string _email = string.Empty;
     private string _password = string.Empty;
@@ -20,16 +21,22 @@ public class RegisterViewModel : PageViewModelBase
     public string Email { get => _email; set { _email = value; OnPropertyChanged(); } }
     public string Password { get => _password; set { _password = value; OnPropertyChanged(); } }
     public string ConfirmPassword { get => _confirmPassword; set { _confirmPassword = value; OnPropertyChanged(); } }
-    public string ErrorMessage { get => _errorMessage; private set { _errorMessage = value; OnPropertyChanged(); } }
+    public string ErrorMessage
+    {
+        get => UiPreferences.Instance.Translate(_errorMessage);
+        private set { _errorMessage = value; OnPropertyChanged(); }
+    }
+
+    protected override void OnLanguageChanged() => OnPropertyChanged(nameof(ErrorMessage));
 
     public ICommand RegisterCommand { get; }
     public ICommand NavigateToLoginCommand { get; }
 
-    public RegisterViewModel(LocalAuthSession auth)
+    public RegisterViewModel(IAuthService auth)
     {
         _auth = auth;
         RegisterCommand = new RelayCommand(
-            _ => Register(),
+            async _ => await RegisterAsync(),
             _ => !_isBusy
                  && !string.IsNullOrWhiteSpace(Name)
                  && !string.IsNullOrWhiteSpace(Email)
@@ -37,7 +44,7 @@ public class RegisterViewModel : PageViewModelBase
         NavigateToLoginCommand = new RelayCommand(_ => LoginRequested?.Invoke());
     }
 
-    private void Register()
+    private async Task RegisterAsync()
     {
         ErrorMessage = string.Empty;
         if (Password != ConfirmPassword)
@@ -47,13 +54,24 @@ public class RegisterViewModel : PageViewModelBase
         }
 
         _isBusy = true;
+        CommandManager.InvalidateRequerySuggested();
         try
         {
-            if (_auth.TryRegister(Name, Email, Password, out var error))
+            // Валідація (довжина пароля, формат пошти) — в AuthService.
+            var result = await _auth.RegisterAsync(Name, Email, Password);
+            if (result.Success)
                 Registered?.Invoke();
             else
-                ErrorMessage = error;
+                ErrorMessage = result.Error ?? "Не вдалося зареєструватися.";
         }
-        finally { _isBusy = false; }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"{UiPreferences.Instance.Translate("Помилка реєстрації")}: {ex.Message}";
+        }
+        finally
+        {
+            _isBusy = false;
+            CommandManager.InvalidateRequerySuggested();
+        }
     }
 }
