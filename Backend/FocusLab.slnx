@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FocusLab.Application.Tests/FocusLab.Application.Tests.csproj" />
+    <Project Path="tests/FocusLab.Frontend.Tests/FocusLab.Frontend.Tests.csproj" />
   </Folder>
   <Project Path="../frontend/frontend.csproj" />
 </Solution>

@@ -47,6 +47,8 @@ public partial class App : Application
                     // Реалізації, яким потрібен Windows (живуть у frontend)
                     services.AddSingleton<INotificationService, WindowsNotificationService>();
                     services.AddSingleton<ISoundPlayer, SystemSoundPlayer>();
+                    services.AddSingleton<IAppClock>(AppClock.Instance);
+                    services.AddSingleton<IDialogService, WpfDialogService>();
 
                     services.AddTransient<MainViewModel>();
                 })
