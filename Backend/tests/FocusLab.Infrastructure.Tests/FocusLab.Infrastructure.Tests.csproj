@@ -16,7 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Application і Domain підтягуються транзитивно -->
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Infrastructure\FocusLab.Infrastructure.csproj" />
   </ItemGroup>
 
