@@ -28,7 +28,8 @@ public class DayCell : BoardBase
     public DateTime? Date { get; init; }
     public string Number => Date?.Day.ToString() ?? "";
     public bool HasDate => Date.HasValue;
-    public bool IsToday => Date?.Date == DateTime.Today;
+    /// <summary>Виставляється календарем за поточним часом (IAppClock).</summary>
+    public bool IsToday { get; init; }
     public List<string> Dots { get; init; } = new();
     public bool IsSelected { get => _isSelected; set => SetField(ref _isSelected, value); }
     public ICommand SelectCommand { get; set; } = null!;
@@ -46,12 +47,17 @@ public class CalendarViewModel : PageViewModelBase
         { "Понеділок", "Вівторок", "Середа", "Четвер", "П’ятниця", "Субота", "Неділя" };
 
     private readonly TaskBoardStore _store;
-    private DateTime _month = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-    private DateTime _selected = DateTime.Today;
+    private readonly IAppClock _clock;
+    private DateTime _month;
+    private DateTime _selected;
 
-    public CalendarViewModel(TaskBoardStore store)
+    public CalendarViewModel(TaskBoardStore store, IAppClock? clock = null)
     {
         _store = store;
+        _clock = clock ?? store.Clock;
+        var today = _clock.Today;
+        _month = new DateTime(today.Year, today.Month, 1);
+        _selected = today;
         PrevMonthCommand = new RelayCommand(_ => ChangeMonth(-1));
         NextMonthCommand = new RelayCommand(_ => ChangeMonth(1));
         _store.Changed += (_, _) =>
@@ -148,8 +154,9 @@ public class CalendarViewModel : PageViewModelBase
     private void ChangeMonth(int delta)
     {
         _month = _month.AddMonths(delta);
-        _selected = _month.Year == DateTime.Today.Year && _month.Month == DateTime.Today.Month
-            ? DateTime.Today
+        var today = _clock.Today;
+        _selected = _month.Year == today.Year && _month.Month == today.Month
+            ? today
             : _month;
         Build();
         LoadSelected();
@@ -170,6 +177,7 @@ public class CalendarViewModel : PageViewModelBase
             var cell = new DayCell
             {
                 Date = date,
+                IsToday = date == _clock.Today,
                 IsSelected = date == _selected.Date,
                 Dots = EventsFor(date).Take(3).Select(e => e.Kind).ToList()
             };
@@ -210,9 +218,17 @@ public class CalendarViewModel : PageViewModelBase
             .Select((row, index) => CreateEvent(row, index))
             .ToList();
 
-    private static CalendarEvent CreateEvent(TaskRow row, int index)
+    /// <summary>Перша подія дня починається о 9:00, далі — щогодини.</summary>
+    public const int FirstEventHour = 9;
+
+    /// <summary>Скільки годинних слотів поміщається між 9:00 і 23:00 включно.</summary>
+    public const int SlotsPerDay = 24 - FirstEventHour;
+
+    public static CalendarEvent CreateEvent(TaskRow row, int index)
     {
-        var startHour = 9 + index;
+        // Раніше було 9 + index: з 16-ї події година виходила за 23, а TimeSpan(24, 0, 0)
+        // показувався як «00:00 - 00:25». Тепер слоти циклічно повторюються в межах доби.
+        var startHour = FirstEventHour + Math.Abs(index) % SlotsPerDay;
         return new CalendarEvent
         {
             Title = row.Title,

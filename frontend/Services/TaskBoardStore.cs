@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Windows;
 using FocusLab.Application.Abstractions;
 using FocusLab.Application.Dto;
 using FocusLab.Domain.Enums;
@@ -24,12 +23,20 @@ public sealed class TaskBoardStore
     ];
 
     private readonly ITaskService _service;
+    private readonly IDialogService _dialogs;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private bool _isLoading;
 
-    public TaskBoardStore(ITaskService service)
+    public TaskBoardStore(
+        ITaskService service,
+        IDialogService? dialogs = null,
+        IAppClock? clock = null,
+        TaskAttachmentStore? attachments = null)
     {
         _service = service;
+        _dialogs = dialogs ?? new WpfDialogService();
+        Clock = clock ?? AppClock.Instance;
+        Attachments = attachments ?? new TaskAttachmentStore();
 
         Rows.CollectionChanged += (_, e) =>
         {
@@ -50,6 +57,11 @@ public sealed class TaskBoardStore
     }
 
     public ObservableCollection<TaskRow> Rows { get; } = new();
+
+    public IAppClock Clock { get; }
+
+    /// <summary>Локальні вкладення задач (файли, папки, посилання).</summary>
+    public TaskAttachmentStore Attachments { get; }
 
     public event EventHandler? Changed;
 
@@ -90,17 +102,15 @@ public sealed class TaskBoardStore
 
     public bool Remove(TaskRow row)
     {
-        var result = MessageBox.Show(
+        var confirmed = _dialogs.Confirm(
             string.Format(UiPreferences.Instance.Translate("Видалити завдання «{0}»?"), row.Title),
-            UiPreferences.Instance.Translate("Підтвердження видалення"),
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-        if (result != MessageBoxResult.Yes)
+            UiPreferences.Instance.Translate("Підтвердження видалення"));
+        if (!confirmed)
             return false;
 
         Rows.Remove(row);
         if (row.Id != 0)
-            TaskAttachmentStore.Instance.RemoveForTask(row.Id);
+            Attachments.RemoveForTask(row.Id);
         Enqueue(async () =>
         {
             if (row.Id != 0)
@@ -149,7 +159,7 @@ public sealed class TaskBoardStore
 
     // ───── мапінг UI ↔ DTO ─────
 
-    private static TaskRow FromDto(TaskDto dto) => new()
+    private TaskRow FromDto(TaskDto dto) => new(Clock)
     {
         Id = dto.Id,
         CreatedAt = dto.CreatedAt,
@@ -194,6 +204,5 @@ public sealed class TaskBoardStore
     private static TaskStatus ParseStatus(string status)
         => Enum.TryParse<TaskStatus>(status, out var parsed) ? parsed : TaskStatus.Todo;
 
-    private static void ShowError(string title, Exception ex)
-        => MessageBox.Show($"{title}:\n{ex.Message}", "FocusLab", MessageBoxButton.OK, MessageBoxImage.Error);
+    private void ShowError(string title, Exception ex) => _dialogs.ShowError(title, ex);
 }
