@@ -156,7 +156,7 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         Links.Clear();
         if (SelectedTask is { Id: not 0 } task)
         {
-            foreach (var attachment in TaskAttachmentStore.Instance.GetFor(task.Id))
+            foreach (var attachment in _store.Attachments.GetFor(task.Id))
                 (attachment.Kind == AttachmentKind.Link ? Links : Files).Add(new AttachmentItem(attachment));
         }
 
@@ -174,7 +174,7 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
 
         foreach (var path in dialog.FileNames)
         {
-            TaskAttachmentStore.Instance.Add(new TaskAttachment
+            _store.Attachments.Add(new TaskAttachment
             {
                 TaskId = task.Id,
                 Kind = AttachmentKind.File,
@@ -193,7 +193,7 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         var dialog = new Microsoft.Win32.OpenFolderDialog();
         if (dialog.ShowDialog() != true) return;
 
-        TaskAttachmentStore.Instance.Add(new TaskAttachment
+        _store.Attachments.Add(new TaskAttachment
         {
             TaskId = task.Id,
             Kind = AttachmentKind.Folder,
@@ -206,7 +206,7 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     private void RemoveAttachment(AttachmentItem? item)
     {
         if (item is null) return;
-        TaskAttachmentStore.Instance.Remove(item.Model.Id);
+        _store.Attachments.Remove(item.Model.Id);
         LoadAttachments();
     }
 

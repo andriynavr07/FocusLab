@@ -1,6 +1,8 @@
+using System.IO;
 using System.Windows;
 using FocusLab.Application.Abstractions;
 using FocusLab.Application.Focus;
+using FocusLab.Infrastructure.SystemServices;
 using Frontend.Services;
 
 namespace Frontend.ViewModels;
@@ -14,6 +16,8 @@ public class MainViewModel : ViewModelBase
     private readonly IFocusTimerService _focusTimer;
     private readonly IFocusSettingsProvider _focusSettings;
     private readonly IActivityService _activity;
+    private readonly IDialogService _dialogs;
+    private readonly IAppClock _clock;
     private ViewModelBase? _current;
 
     public ViewModelBase? Current
@@ -33,7 +37,9 @@ public class MainViewModel : ViewModelBase
         ICurrentAccount currentAccount,
         IFocusTimerService focusTimer,
         IFocusSettingsProvider focusSettings,
-        IActivityService activity)
+        IActivityService activity,
+        IDialogService dialogs,
+        IAppClock clock)
     {
         _auth = auth;
         _tasks = tasks;
@@ -42,6 +48,8 @@ public class MainViewModel : ViewModelBase
         _focusTimer = focusTimer;
         _focusSettings = focusSettings;
         _activity = activity;
+        _dialogs = dialogs;
+        _clock = clock;
     }
 
     public async void Start()
@@ -81,7 +89,8 @@ public class MainViewModel : ViewModelBase
         // Ім'я та пошта, збережені під час реєстрації, потрібні до створення сторінок (Налаштування, аватар).
         await LoadProfileAsync();
 
-        var store = new TaskBoardStore(_tasks);
+        var attachments = new TaskAttachmentStore(Path.Combine(AppPaths.Root, "attachments.json"));
+        var store = new TaskBoardStore(_tasks, _dialogs, _clock, attachments);
         var timer = new TimerViewModel(_focusTimer, _focusSettings, store);
         Current = new WorkspaceViewModel(store, timer, _activity, _auth, _catalog, onLogout: Logout);
         await store.LoadAsync();

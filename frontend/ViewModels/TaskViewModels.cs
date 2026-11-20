@@ -27,11 +27,12 @@ public class EstimateOption(int minutes) : BoardBase
 
 public class TaskRow : BoardBase
 {
+    private readonly IAppClock _clock;
     private string _status = "Todo";
     private string _title = "";
     private string _priorityKey = "Low";
     private string _description = "";
-    private DateTime _dueDate = DateTime.Today;
+    private DateTime _dueDate;
     private int _resourceCount;
     private int _id;
     private int? _estimatedMinutes;
@@ -40,8 +41,12 @@ public class TaskRow : BoardBase
     private int[] _tagIds = [];
     private TaskSubtaskDto[] _subtasks = [];
 
-    public TaskRow()
-        => PropertyChangedEventManager.AddHandler(UiPreferences.Instance, OnPreferencesChanged, nameof(UiPreferences.Language));
+    public TaskRow(IAppClock? clock = null)
+    {
+        _clock = clock ?? AppClock.Instance;
+        _dueDate = _clock.Today;
+        PropertyChangedEventManager.AddHandler(UiPreferences.Instance, OnPreferencesChanged, nameof(UiPreferences.Language));
+    }
 
     /// <summary>Id задачі в БД; 0 — ще не збережено.</summary>
     public int Id { get => _id; set => SetField(ref _id, value); }
@@ -92,7 +97,7 @@ public class TaskRow : BoardBase
         set
         {
             if (!SetField(ref _status, value)) return;
-            CompletedAt = value == "Done" ? DateTime.Now : null;
+            CompletedAt = value == "Done" ? _clock.Now : null;
             OnPropertyChanged(nameof(IsDone));
             OnPropertyChanged(nameof(StatusText));
             OnPropertyChanged(nameof(StatusDisplay));
@@ -119,8 +124,8 @@ public class TaskRow : BoardBase
         PriorityKey switch { "Critical" => "КРИТИЧНИЙ", "High" => "ВИСОКИЙ", "Medium" => "СЕРЕДНІЙ", _ => "НИЗЬКИЙ" });
     public int PriorityRank => PriorityKey switch { "Critical" => 0, "High" => 1, "Medium" => 2, _ => 3 };
     public string EstimateText => EstimatedMinutes is > 0 ? Uk.Duration(EstimatedMinutes.Value).ToUpperInvariant() : string.Empty;
-    public string DueText => DueDate.Date == DateTime.Today ? UiPreferences.Instance.Translate("Сьогодні") : Uk.Short(DueDate);
-    public bool IsOverdue => !IsDone && DueDate.Date < DateTime.Today;
+    public string DueText => DueDate.Date == _clock.Today ? UiPreferences.Instance.Translate("Сьогодні") : Uk.Short(DueDate);
+    public bool IsOverdue => !IsDone && DueDate.Date < _clock.Today;
 
     private void OnPreferencesChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -145,7 +150,7 @@ public class TasksViewModel : PageViewModelBase
     private bool _isAddOpen;
     private string _newTitle = "";
     private string _newDescription = "";
-    private DateTime _newDueDate = DateTime.Today;
+    private DateTime _newDueDate;
     private int _newDueHour = 18;
     private int _newDueMinute;
     private bool _isDatePickerOpen;
@@ -163,6 +168,7 @@ public class TasksViewModel : PageViewModelBase
     public TasksViewModel(TaskBoardStore store, ICatalogService catalog)
     {
         _store = store;
+        _newDueDate = store.Clock.Today;
         _catalog = catalog;
         // Порядок і назви — як на макеті модалки «Нове завдання».
         Priorities = new[]
@@ -178,8 +184,7 @@ public class TasksViewModel : PageViewModelBase
         Hours = Enumerable.Range(0, 24).ToArray();
         Minutes = new[] { 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55 };
 
-        _store.Changed += (_, _) =>
-            System.Windows.Application.Current.Dispatcher.InvokeAsync(RefreshView);
+        _store.Changed += (_, _) => PostRefresh();
         // Нове/видалене завдання одразу потрапляє у список.
         _store.Rows.CollectionChanged += (_, _) => RefreshView();
         RefreshView();
@@ -394,6 +399,16 @@ public class TasksViewModel : PageViewModelBase
         RefreshView();
     }
 
+    /// <summary>Оновлює список у потоці UI; без застосунку (юніт-тести) — одразу.</summary>
+    private void PostRefresh()
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is null)
+            RefreshView();
+        else
+            dispatcher.InvokeAsync(RefreshView);
+    }
+
     private void RefreshView()
     {
         IEnumerable<TaskRow> query = Rows.Where(Filter);
@@ -450,9 +465,10 @@ public class TasksViewModel : PageViewModelBase
         NewTitle = "";
         NewDescription = "";
         // За замовчуванням — сьогодні о 18:00 (якщо вже пізніше — наступна повна година).
-        var due = DateTime.Today.AddHours(18);
-        if (due <= DateTime.Now)
-            due = DateTime.Today.AddHours(DateTime.Now.Hour + 1);
+        var clock = _store.Clock;
+        var due = clock.Today.AddHours(18);
+        if (due <= clock.Now)
+            due = clock.Today.AddHours(clock.Now.Hour + 1);
         NewDueDate = due.Date;
         NewDueHour = due.Hour;
         NewDueMinute = 0;
@@ -511,13 +527,13 @@ public class TasksViewModel : PageViewModelBase
         }
         else
         {
-            AddRow(new TaskRow
+            AddRow(new TaskRow(_store.Clock)
             {
                 Title = NewTitle.Trim(),
                 Description = NewDescription.Trim(),
                 PriorityKey = NewPriority.Key,
                 DueDate = NewDueDateTime,
-                CreatedAt = DateTime.Now,
+                CreatedAt = _store.Clock.Now,
                 EstimatedMinutes = NewEstimate.Minutes,
                 TagIds = TaskTagOptions.Where(option => option.IsSelected).Select(option => option.Id).ToArray(),
                 Subtasks = ChecklistItems.Select(item => item.ToDto()).ToArray()
