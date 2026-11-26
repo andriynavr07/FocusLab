@@ -43,5 +43,9 @@
 - **Операційна система:** Windows 10 / Windows 11
 - **Середовище виконання:** .NET 8.0 Runtime або вище
 
+## Якість коду
+
+Стиль коду задається в `.editorconfig`, аналізатори — в `Directory.Build.props`. CI перевіряє форматування (`dotnet format --verify-no-changes`) і збирання з аналізаторами. Деталі та рішення щодо `TreatWarningsAsErrors` — у [documents/code-quality.md](documents/code-quality.md).
+
 ## Користувацький інтерфейс
 - Посилання на дизайн користувацького інтерфейсу: https://www.figma.com/design/hmwl2ux0AT1Li6oOAvMfsx/Untitled--Copy-?node-id=0-1&t=zYImCc4LJ4GC106q-1

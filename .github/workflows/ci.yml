@@ -44,8 +44,29 @@ jobs:
       - name: Restore
         run: dotnet restore Backend/FocusLab.slnx
 
+      # Падає, якщо `dotnet format` змінив би хоч один файл (правила — .editorconfig).
+      # Виправити локально: dotnet format <проєкт>  (див. documents/code-quality.md)
+      - name: Check formatting (dotnet format)
+        shell: pwsh
+        run: |
+          $failed = $false
+          # Проєкти беремо зі slnx, щоб перевіряти рівно те, що збирається
+          $projects = Select-String -Path Backend/FocusLab.slnx -Pattern 'Path="([^"]+\.csproj)"' |
+            ForEach-Object { Join-Path Backend $_.Matches[0].Groups[1].Value }
+          foreach ($project in $projects) {
+            Write-Host "::group::dotnet format $project"
+            dotnet format $project --verify-no-changes --no-restore --severity warn --verbosity normal
+            if ($LASTEXITCODE -ne 0) {
+              $failed = $true
+              Write-Host "::error title=Formatting::$project потребує dotnet format"
+            }
+            Write-Host "::endgroup::"
+          }
+          if ($failed) { exit 1 }
+
+      # Попередження збирання (CA* та IDE*) видно в логу й у підсумку `Warning(s)` наприкінці
       - name: Build
-        run: dotnet build Backend/FocusLab.slnx --configuration Release --no-restore
+        run: dotnet build Backend/FocusLab.slnx --configuration Release --no-restore --verbosity minimal -consoleloggerparameters:Summary
       - name: Test
         run: dotnet test Backend/FocusLab.slnx --configuration Release --no-build --logger trx --results-directory ${{ github.workspace }}/TestResults
 
