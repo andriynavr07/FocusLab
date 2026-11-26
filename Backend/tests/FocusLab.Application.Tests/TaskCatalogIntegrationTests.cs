@@ -3,8 +3,8 @@ using FocusLab.Application.Dto;
 using FocusLab.Application.Services;
 using FocusLab.Infrastructure;
 using FocusLab.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace FocusLab.Application.Tests;

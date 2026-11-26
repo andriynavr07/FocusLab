@@ -1,7 +1,7 @@
+using System.IO;
 using FluentAssertions;
 using Frontend.Services;
 using Xunit;
-using System.IO;
 namespace FocusLab.Frontend.Tests;
 
 public sealed class TaskAttachmentStoreTests : IDisposable

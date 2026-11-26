@@ -1,7 +1,7 @@
+using System.Text.Json;
 using FocusLab.Application.Abstractions;
 using FocusLab.Application.Dto;
 using FocusLab.Domain.Entities;
-using System.Text.Json;
 using TaskStatus = FocusLab.Domain.Enums.TaskStatus;
 
 namespace FocusLab.Application.Services;
