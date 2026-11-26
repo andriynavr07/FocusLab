@@ -1,7 +1,7 @@
-using Frontend.Services;
 using System.Windows;
 using System.Windows.Input;
 using FocusLab.Application.Abstractions;
+using Frontend.Services;
 
 namespace Frontend.ViewModels;
 

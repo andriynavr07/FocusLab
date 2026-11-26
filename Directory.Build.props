@@ -1,0 +1,20 @@
+<Project>
+
+  <!-- Спільні налаштування якості коду для всіх проєктів (Backend, frontend, тести). -->
+  <PropertyGroup>
+    <!-- .NET-аналізатори (CA-правила) з SDK; AnalysisMode=Default — лише рекомендовані SDK правила,
+         без шуму від суворих наборів (Recommended/All). Розширювати — окремим рішенням. -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Default</AnalysisMode>
+
+    <!-- IDE-правила з .editorconfig (стиль коду) виконуються під час dotnet build,
+         тож їхні попередження видно в логах CI, а не лише в редакторі. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Рішення: попередження НЕ вважаються помилками (TreatWarningsAsErrors=false).
+         Причини та план переходу — documents/code-quality.md. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

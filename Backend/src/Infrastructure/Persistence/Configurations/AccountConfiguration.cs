@@ -14,7 +14,7 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(a => a.Id).HasColumnName("id");
 
         builder.Property(a => a.Username).HasColumnName("username").HasMaxLength(100).IsRequired();
-        
+
 
         builder.Property(a => a.Email).HasColumnName("email").HasMaxLength(254).IsRequired();
         builder.HasIndex(a => a.Email).IsUnique().HasDatabaseName("ux_accounts_email");
