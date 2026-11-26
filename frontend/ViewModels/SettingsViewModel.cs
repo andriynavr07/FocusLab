@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -8,7 +7,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using FocusLab.Application.Abstractions;
 using Frontend.Services;
-using Microsoft.Win32;
 
 namespace Frontend.ViewModels;
 
@@ -47,11 +45,17 @@ public class SettingsViewModel : PageViewModelBase
     private int _workDefault = 25, _breakDefault = 5, _sessionsDefault = 4;
     private readonly TimerViewModel _timer;
     private readonly IAuthService _auth;
+    private readonly IFilePickerService _filePicker;
+    private readonly IProcessLauncher _launcher;
 
-    public SettingsViewModel(TimerViewModel timer, IAuthService auth)
+    public const string SupportUrl = "https://focuslab.app/support";
+
+    public SettingsViewModel(TimerViewModel timer, IAuthService auth, IFilePickerService filePicker, IProcessLauncher launcher)
     {
         _timer = timer;
         _auth = auth;
+        _filePicker = filePicker ?? throw new ArgumentNullException(nameof(filePicker));
+        _launcher = launcher ?? throw new ArgumentNullException(nameof(launcher));
         Accents = new ObservableCollection<AccentOption>
         {
             new("Синій", "#3B6EF5") { IsSelected = true },
@@ -97,7 +101,7 @@ public class SettingsViewModel : PageViewModelBase
         {
             try
             {
-                Process.Start(new ProcessStartInfo("https://focuslab.app/support") { UseShellExecute = true });
+                _launcher.Open(SupportUrl);
             }
             catch (Exception ex)
             {
@@ -261,8 +265,8 @@ public class SettingsViewModel : PageViewModelBase
 
     private void Export()
     {
-        var dlg = new SaveFileDialog { FileName = "focuslab-settings.json", Filter = "JSON|*.json" };
-        if (dlg.ShowDialog() != true) return;
+        var path = _filePicker.PickSaveFile("focuslab-settings.json", "JSON|*.json");
+        if (string.IsNullOrEmpty(path)) return;
 
         var data = new
         {
@@ -279,7 +283,7 @@ public class SettingsViewModel : PageViewModelBase
             SessionsDefault
         };
 
-        File.WriteAllText(dlg.FileName, JsonSerializer.Serialize(data, new JsonSerializerOptions
+        File.WriteAllText(path, JsonSerializer.Serialize(data, new JsonSerializerOptions
         {
             WriteIndented = true,
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping

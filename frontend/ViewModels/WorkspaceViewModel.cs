@@ -42,6 +42,8 @@ public class WorkspaceViewModel : ViewModelBase
         IActivityService activity,
         IAuthService auth,
         ICatalogService catalog,
+        IFilePickerService filePicker,
+        IProcessLauncher launcher,
         Action onLogout)
     {
         _onLogout = onLogout ?? throw new ArgumentNullException(nameof(onLogout));
@@ -49,10 +51,11 @@ public class WorkspaceViewModel : ViewModelBase
         _timer = timer ?? throw new ArgumentNullException(nameof(timer));
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _dashboard = new DashboardViewModel(
-            _taskStore, _timer, activity ?? throw new ArgumentNullException(nameof(activity)), _catalog);
+            _taskStore, _timer, activity ?? throw new ArgumentNullException(nameof(activity)), _catalog,
+            filePicker, launcher);
         _tasks = new TasksViewModel(_taskStore, _catalog);
         _calendar = new CalendarViewModel(_taskStore);
-        _settings = new SettingsViewModel(_timer, auth ?? throw new ArgumentNullException(nameof(auth)));
+        _settings = new SettingsViewModel(_timer, auth ?? throw new ArgumentNullException(nameof(auth)), filePicker, launcher);
         _currentPage = _dashboard;
         _taskStore.Changed += OnTasksChanged;
         _dashboard.EditTaskRequested += OpenEditTask;

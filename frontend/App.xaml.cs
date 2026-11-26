@@ -49,6 +49,8 @@ public partial class App : Application
                     services.AddSingleton<ISoundPlayer, SystemSoundPlayer>();
                     services.AddSingleton<IAppClock>(AppClock.Instance);
                     services.AddSingleton<IDialogService, WpfDialogService>();
+                    services.AddSingleton<IFilePickerService, WpfFilePickerService>();
+                    services.AddSingleton<IProcessLauncher, ShellProcessLauncher>();
 
                     services.AddTransient<MainViewModel>();
                 })

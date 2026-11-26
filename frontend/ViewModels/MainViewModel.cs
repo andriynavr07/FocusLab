@@ -18,6 +18,8 @@ public class MainViewModel : ViewModelBase
     private readonly IActivityService _activity;
     private readonly IDialogService _dialogs;
     private readonly IAppClock _clock;
+    private readonly IFilePickerService _filePicker;
+    private readonly IProcessLauncher _launcher;
     private ViewModelBase? _current;
 
     public ViewModelBase? Current
@@ -39,7 +41,9 @@ public class MainViewModel : ViewModelBase
         IFocusSettingsProvider focusSettings,
         IActivityService activity,
         IDialogService dialogs,
-        IAppClock clock)
+        IAppClock clock,
+        IFilePickerService filePicker,
+        IProcessLauncher launcher)
     {
         _auth = auth;
         _tasks = tasks;
@@ -50,6 +54,8 @@ public class MainViewModel : ViewModelBase
         _activity = activity;
         _dialogs = dialogs;
         _clock = clock;
+        _filePicker = filePicker;
+        _launcher = launcher;
     }
 
     public async void Start()
@@ -92,7 +98,7 @@ public class MainViewModel : ViewModelBase
         var attachments = new TaskAttachmentStore(Path.Combine(AppPaths.Root, "attachments.json"));
         var store = new TaskBoardStore(_tasks, _dialogs, _clock, attachments);
         var timer = new TimerViewModel(_focusTimer, _focusSettings, store);
-        Current = new WorkspaceViewModel(store, timer, _activity, _auth, _catalog, onLogout: Logout);
+        Current = new WorkspaceViewModel(store, timer, _activity, _auth, _catalog, _filePicker, _launcher, onLogout: Logout);
         await store.LoadAsync();
     }
 

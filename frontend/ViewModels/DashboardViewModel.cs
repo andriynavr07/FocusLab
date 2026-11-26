@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -16,6 +15,8 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     private readonly TimerViewModel _timer;
     private readonly IActivityService _activity;
     private readonly ICatalogService _catalog;
+    private readonly IFilePickerService _filePicker;
+    private readonly IProcessLauncher _launcher;
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _activityDebounce;
     private readonly DashboardStatistic _doneToday = new("Виконано сьогодні", "0 завдань");
@@ -37,12 +38,16 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         TaskBoardStore store,
         TimerViewModel timer,
         IActivityService activity,
-        ICatalogService catalog)
+        ICatalogService catalog,
+        IFilePickerService filePicker,
+        IProcessLauncher launcher)
     {
         _store = store;
         _timer = timer;
         _activity = activity;
         _catalog = catalog;
+        _filePicker = filePicker ?? throw new ArgumentNullException(nameof(filePicker));
+        _launcher = launcher ?? throw new ArgumentNullException(nameof(launcher));
         _store.Changed += OnStoreChanged;
         _timer.FocusSessionFinished += OnFocusSessionFinished;
 
@@ -169,10 +174,10 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     private void AttachFile()
     {
         if (SelectedTask is not { Id: not 0 } task) return;
-        var dialog = new Microsoft.Win32.OpenFileDialog { Multiselect = true };
-        if (dialog.ShowDialog() != true) return;
+        var paths = _filePicker.PickFiles();
+        if (paths.Count == 0) return;
 
-        foreach (var path in dialog.FileNames)
+        foreach (var path in paths)
         {
             _store.Attachments.Add(new TaskAttachment
             {
@@ -190,15 +195,15 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
     private void AttachFolder()
     {
         if (SelectedTask is not { Id: not 0 } task) return;
-        var dialog = new Microsoft.Win32.OpenFolderDialog();
-        if (dialog.ShowDialog() != true) return;
+        var folder = _filePicker.PickFolder();
+        if (string.IsNullOrEmpty(folder)) return;
 
         _store.Attachments.Add(new TaskAttachment
         {
             TaskId = task.Id,
             Kind = AttachmentKind.Folder,
-            Name = new DirectoryInfo(dialog.FolderName).Name,
-            Target = dialog.FolderName
+            Name = new DirectoryInfo(folder).Name,
+            Target = folder
         });
         LoadAttachments();
     }
@@ -210,12 +215,12 @@ public class DashboardViewModel : PageViewModelBase, IDisposable
         LoadAttachments();
     }
 
-    private static void OpenAttachment(AttachmentItem? item)
+    private void OpenAttachment(AttachmentItem? item)
     {
         if (item is null) return;
         try
         {
-            Process.Start(new ProcessStartInfo(item.Target) { UseShellExecute = true });
+            _launcher.Open(item.Target);
         }
         catch (Exception ex)
         {
