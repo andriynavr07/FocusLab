@@ -7,7 +7,6 @@ using Xunit;
 
 namespace FocusLab.Frontend.Tests;
 
-[Collection(UiPreferencesCollection.Name)]
 public class CalendarViewModelTests
 {
     private static readonly DateTime Now = new(2026, 11, 19, 14, 30, 0);
@@ -15,7 +14,7 @@ public class CalendarViewModelTests
     [Fact]
     public void First_event_of_the_day_starts_at_nine()
     {
-        var ev = CalendarViewModel.CreateEvent(new TaskRow(new FakeClock(Now)) { Title = "A" }, 0);
+        var ev = CalendarViewModel.CreateEvent(new TaskRow(new FakeClock(Now), TestLocalizers.Ukrainian) { Title = "A" }, 0);
 
         ev.TimeRange.Should().Be("09:00 - 09:25");
     }
@@ -23,7 +22,7 @@ public class CalendarViewModelTests
     [Fact]
     public void Fifteenth_event_still_starts_at_23_00()
     {
-        var ev = CalendarViewModel.CreateEvent(new TaskRow(new FakeClock(Now)) { Title = "A" }, 14);
+        var ev = CalendarViewModel.CreateEvent(new TaskRow(new FakeClock(Now), TestLocalizers.Ukrainian) { Title = "A" }, 14);
 
         ev.TimeRange.Should().Be("23:00 - 23:25");
     }
@@ -34,7 +33,7 @@ public class CalendarViewModelTests
     [InlineData(40)]
     public void Events_beyond_the_last_slot_never_leave_the_day(int index)
     {
-        var ev = CalendarViewModel.CreateEvent(new TaskRow(new FakeClock(Now)) { Title = "A" }, index);
+        var ev = CalendarViewModel.CreateEvent(new TaskRow(new FakeClock(Now), TestLocalizers.Ukrainian) { Title = "A" }, index);
 
         ev.Start.Should().BeGreaterOrEqualTo(TimeSpan.FromHours(CalendarViewModel.FirstEventHour));
         ev.Start.Should().BeLessThan(TimeSpan.FromHours(24));
@@ -44,7 +43,7 @@ public class CalendarViewModelTests
     [Fact]
     public void Every_event_of_a_busy_day_has_a_start_time_within_the_day()
     {
-        var row = new TaskRow(new FakeClock(Now)) { Title = "A" };
+        var row = new TaskRow(new FakeClock(Now), TestLocalizers.Ukrainian) { Title = "A" };
 
         var starts = Enumerable.Range(0, 60)
             .Select(i => CalendarViewModel.CreateEvent(row, i).Start)
@@ -56,7 +55,7 @@ public class CalendarViewModelTests
     [Fact]
     public void Today_cell_is_taken_from_the_clock()
     {
-        var store = new TaskBoardStore(Substitute.For<ITaskService>(), Substitute.For<IDialogService>(), new FakeClock(Now));
+        var store = new TaskBoardStore(Substitute.For<ITaskService>(), Substitute.For<IDialogService>(), new FakeClock(Now), localizer: TestLocalizers.Ukrainian);
         var calendar = new CalendarViewModel(store);
 
         var today = calendar.Days.Where(d => d.IsToday).ToList();
@@ -69,10 +68,10 @@ public class CalendarViewModelTests
     // ───── сітка місяця ─────
 
     private TaskBoardStore CreateStore(DateTime now)
-        => new(Substitute.For<ITaskService>(), Substitute.For<IDialogService>(), new FakeClock(now));
+        => new(Substitute.For<ITaskService>(), Substitute.For<IDialogService>(), new FakeClock(now), localizer: TestLocalizers.Ukrainian);
 
     private static TaskRow RowOn(DateTime due, string title = "Task", bool done = false)
-        => new(new FakeClock(due)) { Title = title, DueDate = due, Status = done ? "Done" : "Todo" };
+        => new(new FakeClock(due), TestLocalizers.Ukrainian) { Title = title, DueDate = due, Status = done ? "Done" : "Todo" };
 
     [Theory]
     [InlineData(2026, 11, 6, 42)] // 1 листопада 2026 — неділя

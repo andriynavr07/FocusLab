@@ -9,25 +9,28 @@ using Frontend.Services;
 
 namespace Frontend.ViewModels;
 
-public class PriorityOption(string key, string label) : BoardBase
+public class PriorityOption(string key, string label, ILocalizer localizer) : BoardBase
 {
     public string Key { get; } = key;
-    public string Label => UiPreferences.Instance.Translate(label);
+    public string Label => localizer.Translate(label);
 
     public void RefreshLanguage() => OnPropertyChanged(nameof(Label));
 }
 
 /// <summary>Варіант списку «Оцінка часу».</summary>
-public class EstimateOption(int minutes) : BoardBase
+public class EstimateOption(int minutes, ILocalizer localizer) : BoardBase
 {
+    private readonly Uk _uk = new(localizer);
+
     public int Minutes { get; } = minutes;
-    public string Label => Uk.Duration(Minutes);
+    public string Label => _uk.Duration(Minutes);
     public void RefreshLanguage() => OnPropertyChanged(nameof(Label));
 }
 
 public class TaskRow : BoardBase
 {
     private readonly IAppClock _clock;
+    private readonly ILocalizer _localizer;
     private string _status = "Todo";
     private string _title = "";
     private string _priorityKey = "Low";
@@ -41,12 +44,19 @@ public class TaskRow : BoardBase
     private int[] _tagIds = [];
     private TaskSubtaskDto[] _subtasks = [];
 
-    public TaskRow(IAppClock? clock = null)
+    public TaskRow(IAppClock? clock = null, ILocalizer? localizer = null)
     {
         _clock = clock ?? AppClock.Instance;
+        _localizer = localizer ?? UiPreferences.Instance;
+        Uk = new Uk(_localizer);
         _dueDate = _clock.Today;
-        PropertyChangedEventManager.AddHandler(UiPreferences.Instance, OnPreferencesChanged, nameof(UiPreferences.Language));
+        PropertyChangedEventManager.AddHandler(_localizer, OnPreferencesChanged, nameof(ILocalizer.Language));
     }
+
+    private Uk Uk { get; }
+
+    /// <summary>Мова, якою рядок показує свої тексти (передається далі, напр. у події календаря).</summary>
+    public ILocalizer Localizer => _localizer;
 
     /// <summary>Id задачі в БД; 0 — ще не збережено.</summary>
     public int Id { get => _id; set => SetField(ref _id, value); }
@@ -111,7 +121,7 @@ public class TaskRow : BoardBase
         set => Status = value ? "Done" : "Todo";
     }
 
-    public string StatusText => UiPreferences.Instance.Translate(Status switch
+    public string StatusText => _localizer.Translate(Status switch
     {
         "Done" => "Виконано",
         "InProgress" => "Виконується",
@@ -120,11 +130,11 @@ public class TaskRow : BoardBase
         _ => "Завдання"
     });
     public string StatusDisplay => IsDone ? StatusText + " ✓" : StatusText;
-    public string PriorityLabel => UiPreferences.Instance.Translate(
+    public string PriorityLabel => _localizer.Translate(
         PriorityKey switch { "Critical" => "КРИТИЧНИЙ", "High" => "ВИСОКИЙ", "Medium" => "СЕРЕДНІЙ", _ => "НИЗЬКИЙ" });
     public int PriorityRank => PriorityKey switch { "Critical" => 0, "High" => 1, "Medium" => 2, _ => 3 };
     public string EstimateText => EstimatedMinutes is > 0 ? Uk.Duration(EstimatedMinutes.Value).ToUpperInvariant() : string.Empty;
-    public string DueText => DueDate.Date == _clock.Today ? UiPreferences.Instance.Translate("Сьогодні") : Uk.Short(DueDate);
+    public string DueText => DueDate.Date == _clock.Today ? _localizer.Translate("Сьогодні") : Uk.Short(DueDate);
     public bool IsOverdue => !IsDone && DueDate.Date < _clock.Today;
 
     private void OnPreferencesChanged(object? sender, PropertyChangedEventArgs e)
@@ -166,6 +176,7 @@ public class TasksViewModel : PageViewModelBase
     private EstimateOption _newEstimate;
 
     public TasksViewModel(TaskBoardStore store, ICatalogService catalog)
+        : base(store.Localizer)
     {
         _store = store;
         _newDueDate = store.Clock.Today;
@@ -173,12 +184,12 @@ public class TasksViewModel : PageViewModelBase
         // Порядок і назви — як на макеті модалки «Нове завдання».
         Priorities = new[]
         {
-            new PriorityOption("Medium", "Середній"),
-            new PriorityOption("Low", "Низький"),
-            new PriorityOption("High", "Високий"),
-            new PriorityOption("Critical", "Критичний")
+            new PriorityOption("Medium", "Середній", Localizer),
+            new PriorityOption("Low", "Низький", Localizer),
+            new PriorityOption("High", "Високий", Localizer),
+            new PriorityOption("Critical", "Критичний", Localizer)
         };
-        EstimateOptions = new[] { 15, 25, 30, 45, 60, 90, 120, 180 }.Select(m => new EstimateOption(m)).ToArray();
+        EstimateOptions = new[] { 15, 25, 30, 45, 60, 90, 120, 180 }.Select(m => new EstimateOption(m, Localizer)).ToArray();
         _newPriority = Priorities[0];
         _newEstimate = EstimateOptions.First(o => o.Minutes == 60);
         Hours = Enumerable.Range(0, 24).ToArray();
@@ -222,9 +233,9 @@ public class TasksViewModel : PageViewModelBase
     private static readonly string[] PriorityFilterTexts = { "Усі пріоритети", "Критичний", "Високий", "Середній", "Низький" };
     private static readonly string[] SortOptionTexts = { "Дедлайном", "Пріоритетом", "Датою створення", "Назвою" };
 
-    public string[] StatusFilters => StatusFilterTexts.Select(UiPreferences.Instance.Translate).ToArray();
-    public string[] PriorityFilters => PriorityFilterTexts.Select(UiPreferences.Instance.Translate).ToArray();
-    public string[] SortOptions => SortOptionTexts.Select(UiPreferences.Instance.Translate).ToArray();
+    public string[] StatusFilters => StatusFilterTexts.Select(Localizer.Translate).ToArray();
+    public string[] PriorityFilters => PriorityFilterTexts.Select(Localizer.Translate).ToArray();
+    public string[] SortOptions => SortOptionTexts.Select(Localizer.Translate).ToArray();
 
     public ObservableCollection<TagDto> TagRecords { get; } = [];
     public ObservableCollection<TagOption> TaskTagOptions { get; } = [];
@@ -239,7 +250,7 @@ public class TasksViewModel : PageViewModelBase
 
     public string SelectedStatus
     {
-        get => UiPreferences.Instance.Translate(_selStatus);
+        get => Localizer.Translate(_selStatus);
         set
         {
             // ComboBox пише null, коли список джерела перезавантажується — це не вибір користувача.
@@ -249,7 +260,7 @@ public class TasksViewModel : PageViewModelBase
     }
     public string SelectedPriority
     {
-        get => UiPreferences.Instance.Translate(_selPriority);
+        get => Localizer.Translate(_selPriority);
         set
         {
             // ComboBox пише null, коли список джерела перезавантажується — це не вибір користувача.
@@ -259,7 +270,7 @@ public class TasksViewModel : PageViewModelBase
     }
     public string SelectedSort
     {
-        get => UiPreferences.Instance.Translate(_selSort);
+        get => Localizer.Translate(_selSort);
         set
         {
             // ComboBox пише null, коли список джерела перезавантажується — це не вибір користувача.
@@ -288,11 +299,11 @@ public class TasksViewModel : PageViewModelBase
         }
     }
     public bool IsEditing => _editingTask is not null;
-    public string FormTitle => UiPreferences.Instance.Translate(IsEditing ? "Редагувати завдання" : "Нове завдання");
-    public string SubmitButtonText => UiPreferences.Instance.Translate(IsEditing ? "Зберегти зміни" : "Створити завдання");
+    public string FormTitle => Localizer.Translate(IsEditing ? "Редагувати завдання" : "Нове завдання");
+    public string SubmitButtonText => Localizer.Translate(IsEditing ? "Зберегти зміни" : "Створити завдання");
     public string FormError
     {
-        get => UiPreferences.Instance.Translate(_formError);
+        get => Localizer.Translate(_formError);
         private set
         {
             if (SetField(ref _formError, value))
@@ -358,7 +369,7 @@ public class TasksViewModel : PageViewModelBase
     public bool CanCreate => NewTitle.Trim().Length is >= 1 and <= 255;
     public string TitleValidationMessage => CanCreate
         ? FormError
-        : UiPreferences.Instance.Translate(string.IsNullOrWhiteSpace(NewTitle)
+        : Localizer.Translate(string.IsNullOrWhiteSpace(NewTitle)
             ? "Введіть назву завдання."
             : "Назва не може бути довшою за 255 символів.");
 
@@ -497,7 +508,7 @@ public class TasksViewModel : PageViewModelBase
             ChecklistItems.Add(new EditableSubtask(subtask));
         NewSubtaskTitle = string.Empty;
         NewEstimate = EstimateOptions.FirstOrDefault(option => option.Minutes == row.EstimatedMinutes)
-            ?? new EstimateOption(row.EstimatedMinutes ?? 60);
+            ?? new EstimateOption(row.EstimatedMinutes ?? 60, Localizer);
         IsDatePickerOpen = false;
         IsAddOpen = true;
     }
@@ -527,7 +538,7 @@ public class TasksViewModel : PageViewModelBase
         }
         else
         {
-            AddRow(new TaskRow(_store.Clock)
+            AddRow(new TaskRow(_store.Clock, Localizer)
             {
                 Title = NewTitle.Trim(),
                 Description = NewDescription.Trim(),
@@ -561,7 +572,7 @@ public class TasksViewModel : PageViewModelBase
         catch (Exception ex)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                MessageBox.Show($"{UiPreferences.Instance.Translate("Не вдалося завантажити теги")}:\n{ex.Message}",
+                MessageBox.Show($"{Localizer.Translate("Не вдалося завантажити теги")}:\n{ex.Message}",
                     "FocusLab", MessageBoxButton.OK, MessageBoxImage.Error));
         }
     }
@@ -621,8 +632,8 @@ public class TasksViewModel : PageViewModelBase
     private async Task DeleteTagAsync()
     {
         if (SelectedTagRecord is not { } tag) return;
-        if (MessageBox.Show(string.Format(UiPreferences.Instance.Translate("Видалити тег «{0}»?"), tag.Name),
-                UiPreferences.Instance.Translate("Підтвердження видалення"),
+        if (MessageBox.Show(string.Format(Localizer.Translate("Видалити тег «{0}»?"), tag.Name),
+                Localizer.Translate("Підтвердження видалення"),
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
 
@@ -666,8 +677,8 @@ public class TasksViewModel : PageViewModelBase
         ChecklistItems.Move(index, target);
     }
 
-    private static string ResolveOption(string value, IEnumerable<string> options)
-        => options.FirstOrDefault(option => UiPreferences.Instance.Translate(option) == value) ?? value;
+    private string ResolveOption(string value, IEnumerable<string> options)
+        => options.FirstOrDefault(option => Localizer.Translate(option) == value) ?? value;
 
 }
 

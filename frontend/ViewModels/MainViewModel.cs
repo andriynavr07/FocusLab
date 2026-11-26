@@ -20,6 +20,7 @@ public class MainViewModel : ViewModelBase
     private readonly IAppClock _clock;
     private readonly IFilePickerService _filePicker;
     private readonly IProcessLauncher _launcher;
+    private readonly ILocalizer _localizer;
     private ViewModelBase? _current;
 
     public ViewModelBase? Current
@@ -43,7 +44,8 @@ public class MainViewModel : ViewModelBase
         IDialogService dialogs,
         IAppClock clock,
         IFilePickerService filePicker,
-        IProcessLauncher launcher)
+        IProcessLauncher launcher,
+        ILocalizer localizer)
     {
         _auth = auth;
         _tasks = tasks;
@@ -56,6 +58,7 @@ public class MainViewModel : ViewModelBase
         _clock = clock;
         _filePicker = filePicker;
         _launcher = launcher;
+        _localizer = localizer;
     }
 
     public async void Start()
@@ -69,7 +72,7 @@ public class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"{UiPreferences.Instance.Translate("Не вдалося прочитати акаунт")}:\n{ex.Message}", "FocusLab",
+            MessageBox.Show($"{_localizer.Translate("Не вдалося прочитати акаунт")}:\n{ex.Message}", "FocusLab",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             ShowLogin();
         }
@@ -77,7 +80,7 @@ public class MainViewModel : ViewModelBase
 
     private void ShowRegister()
     {
-        var viewModel = new RegisterViewModel(_auth);
+        var viewModel = new RegisterViewModel(_auth, _localizer);
         viewModel.Registered += ShowWorkspace;
         viewModel.LoginRequested += ShowLogin;
         Current = viewModel;
@@ -85,7 +88,7 @@ public class MainViewModel : ViewModelBase
 
     private void ShowLogin()
     {
-        var viewModel = new LoginViewModel(_auth, ShowWorkspace);
+        var viewModel = new LoginViewModel(_auth, ShowWorkspace, _localizer);
         viewModel.RegisterRequested += ShowRegister;
         Current = viewModel;
     }
@@ -96,7 +99,7 @@ public class MainViewModel : ViewModelBase
         await LoadProfileAsync();
 
         var attachments = new TaskAttachmentStore(Path.Combine(AppPaths.Root, "attachments.json"));
-        var store = new TaskBoardStore(_tasks, _dialogs, _clock, attachments);
+        var store = new TaskBoardStore(_tasks, _dialogs, _clock, attachments, _localizer);
         var timer = new TimerViewModel(_focusTimer, _focusSettings, store);
         Current = new WorkspaceViewModel(store, timer, _activity, _auth, _catalog, _filePicker, _launcher, onLogout: Logout);
         await store.LoadAsync();
@@ -112,7 +115,7 @@ public class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"{UiPreferences.Instance.Translate("Не вдалося завантажити профіль")}:\n{ex.Message}", "FocusLab",
+            MessageBox.Show($"{_localizer.Translate("Не вдалося завантажити профіль")}:\n{ex.Message}", "FocusLab",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }

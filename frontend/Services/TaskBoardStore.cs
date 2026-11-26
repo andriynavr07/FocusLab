@@ -31,11 +31,13 @@ public sealed class TaskBoardStore
         ITaskService service,
         IDialogService? dialogs = null,
         IAppClock? clock = null,
-        TaskAttachmentStore? attachments = null)
+        TaskAttachmentStore? attachments = null,
+        ILocalizer? localizer = null)
     {
         _service = service;
         _dialogs = dialogs ?? new WpfDialogService();
         Clock = clock ?? AppClock.Instance;
+        Localizer = localizer ?? UiPreferences.Instance;
         Attachments = attachments ?? new TaskAttachmentStore();
 
         Rows.CollectionChanged += (_, e) =>
@@ -59,6 +61,9 @@ public sealed class TaskBoardStore
     public ObservableCollection<TaskRow> Rows { get; } = new();
 
     public IAppClock Clock { get; }
+
+    /// <summary>Мова інтерфейсу для всіх сторінок, що працюють із цим сховищем.</summary>
+    public ILocalizer Localizer { get; }
 
     /// <summary>Локальні вкладення задач (файли, папки, посилання).</summary>
     public TaskAttachmentStore Attachments { get; }
@@ -103,8 +108,8 @@ public sealed class TaskBoardStore
     public bool Remove(TaskRow row)
     {
         var confirmed = _dialogs.Confirm(
-            string.Format(UiPreferences.Instance.Translate("Видалити завдання «{0}»?"), row.Title),
-            UiPreferences.Instance.Translate("Підтвердження видалення"));
+            string.Format(Localizer.Translate("Видалити завдання «{0}»?"), row.Title),
+            Localizer.Translate("Підтвердження видалення"));
         if (!confirmed)
             return false;
 
@@ -159,7 +164,7 @@ public sealed class TaskBoardStore
 
     // ───── мапінг UI ↔ DTO ─────
 
-    private TaskRow FromDto(TaskDto dto) => new(Clock)
+    private TaskRow FromDto(TaskDto dto) => new(Clock, Localizer)
     {
         Id = dto.Id,
         CreatedAt = dto.CreatedAt,

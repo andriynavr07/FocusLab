@@ -13,7 +13,7 @@ public sealed class AttachmentItem
     private static readonly Brush Excel = Frozen("#34D399");
     private static readonly Brush Other = Frozen("#64748B");
 
-    public AttachmentItem(TaskAttachment model)
+    public AttachmentItem(TaskAttachment model, ILocalizer localizer)
     {
         Model = model;
         Title = model.Name;
@@ -24,7 +24,7 @@ public sealed class AttachmentItem
             case AttachmentKind.Folder:
                 BadgeText = "DIR";
                 BadgeBrush = Folder;
-                Subtitle = $"{UiPreferences.Instance.Translate("Локальна папка")} · {model.Target}";
+                Subtitle = $"{localizer.Translate("Локальна папка")} · {model.Target}";
                 break;
             case AttachmentKind.Link:
                 Domain = Uri.TryCreate(model.Target, UriKind.Absolute, out var uri) ? uri.Host : model.Target;
@@ -40,7 +40,7 @@ public sealed class AttachmentItem
                     "XLS" or "XLSX" or "CSV" => Excel,
                     _ => Other
                 };
-                Subtitle = $"{FormatSize(model.SizeBytes)} · {ModifiedText(model.Target)}";
+                Subtitle = $"{FormatSize(model.SizeBytes, localizer)} · {ModifiedText(model.Target, localizer)}";
                 break;
         }
     }
@@ -53,14 +53,14 @@ public sealed class AttachmentItem
     public Brush BadgeBrush { get; } = Other;
     public string Domain { get; } = string.Empty;
 
-    private static string ModifiedText(string path)
+    private static string ModifiedText(string path, ILocalizer localizer)
     {
         try
         {
             var modified = File.GetLastWriteTime(path).Date;
             return modified == DateTime.Today
-                ? UiPreferences.Instance.Translate("Оновлено сьогодні")
-                : $"{UiPreferences.Instance.Translate("Оновлено")} {modified:dd.MM.yyyy}";
+                ? localizer.Translate("Оновлено сьогодні")
+                : $"{localizer.Translate("Оновлено")} {modified:dd.MM.yyyy}";
         }
         catch
         {
@@ -68,11 +68,11 @@ public sealed class AttachmentItem
         }
     }
 
-    private static string FormatSize(long bytes) => bytes switch
+    private static string FormatSize(long bytes, ILocalizer localizer) => bytes switch
     {
-        >= 1024 * 1024 => $"{bytes / 1024d / 1024d:0.#} {UiPreferences.Instance.Translate("МБ")}",
-        >= 1024 => $"{bytes / 1024d:0.#} {UiPreferences.Instance.Translate("КБ")}",
-        _ => $"{bytes} {UiPreferences.Instance.Translate("Б")}"
+        >= 1024 * 1024 => $"{bytes / 1024d / 1024d:0.#} {localizer.Translate("МБ")}",
+        >= 1024 => $"{bytes / 1024d:0.#} {localizer.Translate("КБ")}",
+        _ => $"{bytes} {localizer.Translate("Б")}"
     };
 
     private static Brush Frozen(string hex)

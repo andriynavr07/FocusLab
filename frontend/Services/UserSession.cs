@@ -29,7 +29,7 @@ public sealed class UserSession
     }
 
     public string StreakText
-        => $"{StreakDays} {Uk.Plural(StreakDays, "день", "дні", "днів")} активності";
+        => $"{StreakDays} {new Uk(UiPreferences.Instance).Plural(StreakDays, "день", "дні", "днів")} активності";
 
     public void SetProfile(string name, string email)
     {

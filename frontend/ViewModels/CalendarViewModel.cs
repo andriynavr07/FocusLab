@@ -11,13 +11,14 @@ public class CalendarEvent : BoardBase
     public int Minutes { get; init; }
     public string Kind { get; init; } = "Accent"; // Accent | Success | Danger
     public bool IsDone { get; init; }
+    public ILocalizer Localizer { get; init; } = UiPreferences.Instance;
 
     public string TimeRange => $"{Start:hh\\:mm} - {Start.Add(TimeSpan.FromMinutes(Minutes)):hh\\:mm}";
     public string Meta => Duration;
 
     private string Duration => Minutes % 60 == 0
-        ? $"{Minutes / 60} {Uk.Plural(Minutes / 60, "година", "години", "годин")}"
-        : UiPreferences.Instance.Language == "English" ? $"{Minutes} min" : $"{Minutes} хвилин";
+        ? $"{Minutes / 60} {new Uk(Localizer).Plural(Minutes / 60, "година", "години", "годин")}"
+        : Localizer.IsEnglish ? $"{Minutes} min" : $"{Minutes} хвилин";
 
     public void RefreshLanguage() => OnPropertyChanged(nameof(Meta));
 }
@@ -52,6 +53,7 @@ public class CalendarViewModel : PageViewModelBase
     private DateTime _selected;
 
     public CalendarViewModel(TaskBoardStore store, IAppClock? clock = null)
+        : base(store.Localizer)
     {
         _store = store;
         _clock = clock ?? store.Clock;
@@ -77,7 +79,7 @@ public class CalendarViewModel : PageViewModelBase
     public ICommand PrevMonthCommand { get; }
     public ICommand NextMonthCommand { get; }
 
-    public string MonthTitle => $"{UiPreferences.Instance.Translate(MonthNames[_month.Month - 1])} {_month.Year}";
+    public string MonthTitle => $"{Localizer.Translate(MonthNames[_month.Month - 1])} {_month.Year}";
 
     public string SelectedDayTitle
     {
@@ -85,7 +87,7 @@ public class CalendarViewModel : PageViewModelBase
         {
             var m = Uk.Month(_selected);
             var month = char.ToUpper(m[0]) + m[1..].ToLower();
-            return $"{UiPreferences.Instance.Translate(DayNames[((int)_selected.DayOfWeek + 6) % 7])}, {_selected.Day} {month}";
+            return $"{Localizer.Translate(DayNames[((int)_selected.DayOfWeek + 6) % 7])}, {_selected.Day} {month}";
         }
     }
 
@@ -118,7 +120,7 @@ public class CalendarViewModel : PageViewModelBase
         get
         {
             var n = SelectedEvents.Count;
-            if (UiPreferences.Instance.Language == "English")
+            if (Localizer.IsEnglish)
                 return n == 0
                     ? "A free day. Use it to plan or rest."
                     : $"{n} {(n == 1 ? "task is" : "tasks are")} planned for this day. " +
@@ -235,7 +237,8 @@ public class CalendarViewModel : PageViewModelBase
             Start = new TimeSpan(startHour, 0, 0),
             Minutes = 25,
             Kind = row.IsDone ? "Success" : row.IsOverdue ? "Danger" : "Accent",
-            IsDone = row.IsDone
+            IsDone = row.IsDone,
+            Localizer = row.Localizer
         };
     }
 }

@@ -2,7 +2,11 @@ using System.Globalization;
 
 namespace Frontend.Services;
 
-public static class Uk
+/// <summary>
+/// Форматування чисел, дат і тривалостей з урахуванням мови інтерфейсу.
+/// Не статичний: мову бере з переданого <see cref="ILocalizer"/>, а не з глобального стану.
+/// </summary>
+public sealed class Uk(ILocalizer localizer)
 {
     private static readonly string[] MonthNames =
     [
@@ -10,10 +14,18 @@ public static class Uk
         "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"
     ];
 
-    public static string Plural(int value, string one, string few, string many)
+    private static readonly string[] ShortMonthNames =
+    [
+        "СІЧ", "ЛЮТ", "БЕР", "КВІ", "ТРА", "ЧЕР",
+        "ЛИП", "СЕР", "ВЕР", "ЖОВ", "ЛИС", "ГРУ"
+    ];
+
+    private readonly ILocalizer _localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
+
+    public string Plural(int value, string one, string few, string many)
     {
-        if (UiPreferences.Instance.Language == "English")
-            return UiPreferences.Instance.Translate(value == 1 ? one : many);
+        if (_localizer.IsEnglish)
+            return _localizer.Translate(value == 1 ? one : many);
 
         var lastTwoDigits = Math.Abs(value) % 100;
         if (lastTwoDigits is >= 11 and <= 14)
@@ -27,22 +39,16 @@ public static class Uk
         };
     }
 
-    private static readonly string[] ShortMonthNames =
-    [
-        "СІЧ", "ЛЮТ", "БЕР", "КВІ", "ТРА", "ЧЕР",
-        "ЛИП", "СЕР", "ВЕР", "ЖОВ", "ЛИС", "ГРУ"
-    ];
-
     /// <summary>«22 ВЕР 2026» — скорочений місяць великими літерами.</summary>
-    public static string ShortUpper(DateTime date, bool withYear = false)
-        => UiPreferences.Instance.Language == "English"
+    public string ShortUpper(DateTime date, bool withYear = false)
+        => _localizer.IsEnglish
             ? date.ToString(withYear ? "MMM dd yyyy" : "MMM d", CultureInfo.GetCultureInfo("en-US")).ToUpperInvariant()
             : withYear ? $"{date.Day:00} {ShortMonthNames[date.Month - 1]} {date.Year}" : $"{date.Day} {ShortMonthNames[date.Month - 1]}";
 
     /// <summary>Тривалість у хвилинах: «25 хв», «1 година», «1 год 25 хв».</summary>
-    public static string Duration(int minutes)
+    public string Duration(int minutes)
     {
-        if (UiPreferences.Instance.Language == "English")
+        if (_localizer.IsEnglish)
         {
             var hours = minutes / 60;
             var remainingMinutes = minutes % 60;
@@ -57,11 +63,11 @@ public static class Uk
         return m == 0 ? $"{h} {Plural(h, "година", "години", "годин")}" : $"{h} год {m} хв";
     }
 
-    public static string Short(DateTime date) => UiPreferences.Instance.Language == "English"
+    public string Short(DateTime date) => _localizer.IsEnglish
         ? date.ToString("MMM d", CultureInfo.GetCultureInfo("en-US"))
         : $"{date.Day} {Month(date)}";
 
-    public static string Month(DateTime date) => UiPreferences.Instance.Language == "English"
+    public string Month(DateTime date) => _localizer.IsEnglish
         ? date.ToString("MMMM", CultureInfo.GetCultureInfo("en-US"))
         : MonthNames[date.Month - 1];
 }

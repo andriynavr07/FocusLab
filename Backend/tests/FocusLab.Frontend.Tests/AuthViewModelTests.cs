@@ -7,7 +7,6 @@ using Xunit;
 
 namespace FocusLab.Frontend.Tests;
 
-[Collection(UiPreferencesCollection.Name)]
 public class AuthViewModelTests
 {
     private readonly IAuthService _auth = Substitute.For<IAuthService>();
@@ -18,8 +17,8 @@ public class AuthViewModelTests
             await Task.Delay(20);
     }
 
-    private RegisterViewModel CreateRegister(string password = "secret1", string confirm = "secret1")
-        => new(_auth)
+    private RegisterViewModel CreateRegister(string password = "secret1", string confirm = "secret1", ILocalizer? localizer = null)
+        => new(_auth, localizer ?? TestLocalizers.Ukrainian)
         {
             Name = "Andriy",
             Email = "andriy@example.com",
@@ -27,8 +26,8 @@ public class AuthViewModelTests
             ConfirmPassword = confirm
         };
 
-    private LoginViewModel CreateLogin(Action onSuccess)
-        => new(_auth, onSuccess)
+    private LoginViewModel CreateLogin(Action onSuccess, ILocalizer? localizer = null)
+        => new(_auth, onSuccess, localizer ?? TestLocalizers.Ukrainian)
         {
             Email = "andriy@example.com",
             Password = "secret1"
@@ -48,7 +47,7 @@ public class AuthViewModelTests
 
         await _auth.DidNotReceiveWithAnyArgs().RegisterAsync(default!, default!, default!);
         registered.Should().BeFalse();
-        viewModel.ErrorMessage.Should().Be(UiPreferences.Instance.Translate("Паролі не збігаються."));
+        viewModel.ErrorMessage.Should().Be("Паролі не збігаються.");
     }
 
     [Fact]
@@ -81,7 +80,7 @@ public class AuthViewModelTests
         await WaitUntilAsync(() => viewModel.ErrorMessage.Length > 0);
 
         registered.Should().BeFalse();
-        viewModel.ErrorMessage.Should().Be(UiPreferences.Instance.Translate("Пароль занадто короткий."));
+        viewModel.ErrorMessage.Should().Be("Пароль занадто короткий.");
     }
 
     // ───── Login ─────
@@ -113,13 +112,26 @@ public class AuthViewModelTests
         await WaitUntilAsync(() => viewModel.ErrorMessage.Length > 0);
 
         calls.Should().Be(0);
-        viewModel.ErrorMessage.Should().Be(UiPreferences.Instance.Translate("Невірна пошта або пароль."));
+        viewModel.ErrorMessage.Should().Be("Невірна пошта або пароль.");
+    }
+
+    [Fact]
+    public async Task Login_Fail_InEnglish_ShowsTranslatedError()
+    {
+        _auth.LoginAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(AuthResult.Fail("Невірна пошта або пароль."));
+        var viewModel = CreateLogin(() => { }, TestLocalizers.English);
+
+        viewModel.LoginCommand.Execute(null);
+        await WaitUntilAsync(() => viewModel.ErrorMessage.Length > 0);
+
+        viewModel.ErrorMessage.Should().Be("Incorrect email or password.");
     }
 
     [Fact]
     public void Login_CannotExecuteWithoutEmailOrPassword()
     {
-        var viewModel = new LoginViewModel(_auth, () => { });
+        var viewModel = new LoginViewModel(_auth, () => { }, TestLocalizers.Ukrainian);
 
         viewModel.LoginCommand.CanExecute(null).Should().BeFalse();
 
