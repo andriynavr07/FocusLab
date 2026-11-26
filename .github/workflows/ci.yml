@@ -46,3 +46,14 @@ jobs:
 
       - name: Build
         run: dotnet build Backend/FocusLab.slnx --configuration Release --no-restore
+      - name: Test
+        run: dotnet test Backend/FocusLab.slnx --configuration Release --no-build --logger trx --results-directory ${{ github.workspace }}/TestResults
+
+      # if: always() — результати вантажаться навіть тоді, коли тести впали
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/**/*.trx
+          if-no-files-found: warn
