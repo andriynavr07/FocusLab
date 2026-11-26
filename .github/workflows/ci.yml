@@ -67,8 +67,55 @@ jobs:
       # Попередження збирання (CA* та IDE*) видно в логу й у підсумку `Warning(s)` наприкінці
       - name: Build
         run: dotnet build Backend/FocusLab.slnx --configuration Release --no-restore --verbosity minimal -consoleloggerparameters:Summary
+      # coverlet.collector збирає покриття під час тестів (налаштування — coverlet.runsettings)
       - name: Test
-        run: dotnet test Backend/FocusLab.slnx --configuration Release --no-build --logger trx --results-directory ${{ github.workspace }}/TestResults
+        run: dotnet test Backend/FocusLab.slnx --configuration Release --no-build --logger trx --collect:"XPlat Code Coverage" --settings coverlet.runsettings --results-directory ${{ github.workspace }}/TestResults
+
+      # Об'єднуємо звіти всіх тестових проєктів в один (HTML + Cobertura + Markdown для summary)
+      - name: Generate coverage report
+        if: always()
+        shell: pwsh
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.4.1
+          reportgenerator "-reports:TestResults/**/coverage.cobertura.xml" "-targetdir:CoverageReport" "-reporttypes:HtmlInline_AzurePipelines_Dark;Cobertura;MarkdownSummaryGithub" "-assemblyfilters:+FocusLab.*;+frontend"
+
+      # Відсоток покриття FocusLab.Application — у summary запуску (вкладка Summary в Actions).
+      # COVERAGE_MIN_APPLICATION — мінімальний поріг у %; 0 означає «не перевіряти» (щоб не ламати CI на старті).
+      - name: Coverage summary
+        if: always()
+        shell: pwsh
+        env:
+          COVERAGE_MIN_APPLICATION: 0
+        run: |
+          $file = 'CoverageReport/Cobertura.xml'
+          if (-not (Test-Path $file)) {
+            "### Покриття коду`nЗвіт не створено (тести не запустились)." | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            exit 0
+          }
+          [xml]$xml = Get-Content $file
+          $pkg = $xml.coverage.packages.package | Where-Object { $_.name -eq 'FocusLab.Application' }
+          $total = [math]::Round([double]$xml.coverage.'line-rate' * 100, 1)
+          $app = if ($pkg) { [math]::Round([double]$pkg.'line-rate' * 100, 1) } else { $null }
+          $lines = @('### Покриття коду тестами', '')
+          $lines += if ($null -ne $app) { "**FocusLab.Application: $app %** (рядки)" } else { '**FocusLab.Application:** немає даних' }
+          $lines += "Усього по рішенню: $total %"
+          $lines += ''
+          $lines += Get-Content CoverageReport/SummaryGithub.md
+          $lines | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Write-Host "FocusLab.Application line coverage: $app %"
+          $min = [double]$env:COVERAGE_MIN_APPLICATION
+          if ($min -gt 0 -and $null -ne $app -and $app -lt $min) {
+            Write-Host "::error title=Coverage::FocusLab.Application $app % < поріг $min %"
+            exit 1
+          }
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: CoverageReport/
+          if-no-files-found: warn
 
       # if: always() — результати вантажаться навіть тоді, коли тести впали
       - name: Upload test results
