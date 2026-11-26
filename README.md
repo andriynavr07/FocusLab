@@ -47,5 +47,9 @@
 
 Стиль коду задається в `.editorconfig`, аналізатори — в `Directory.Build.props`. CI перевіряє форматування (`dotnet format --verify-no-changes`) і збирання з аналізаторами. Деталі та рішення щодо `TreatWarningsAsErrors` — у [documents/code-quality.md](documents/code-quality.md).
 
+## Покриття тестами
+
+CI збирає покриття (coverlet) і публікує звіт як артефакт `coverage-report`; відсоток для `FocusLab.Application` видно у Summary запуску на вкладці Actions. Поточне значення: дивись останній запуск CI. Як отримати звіт локально — у [documents/code-coverage.md](documents/code-coverage.md).
+
 ## Користувацький інтерфейс
 - Посилання на дизайн користувацького інтерфейсу: https://www.figma.com/design/hmwl2ux0AT1Li6oOAvMfsx/Untitled--Copy-?node-id=0-1&t=zYImCc4LJ4GC106q-1
