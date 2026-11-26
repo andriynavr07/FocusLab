@@ -51,6 +51,7 @@ public partial class App : Application
                     services.AddSingleton<IDialogService, WpfDialogService>();
                     services.AddSingleton<IFilePickerService, WpfFilePickerService>();
                     services.AddSingleton<IProcessLauncher, ShellProcessLauncher>();
+                    services.AddSingleton<ILocalizer>(UiPreferences.Instance);
 
                     services.AddTransient<MainViewModel>();
                 })

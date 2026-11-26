@@ -33,7 +33,8 @@ public sealed class FileDialogsAndLauncherTests : IDisposable
             Substitute.For<ITaskService>(),
             Substitute.For<IDialogService>(),
             _clock,
-            new TaskAttachmentStore(Path.Combine(_dir, "attachments.json")));
+            new TaskAttachmentStore(Path.Combine(_dir, "attachments.json")),
+            TestLocalizers.Ukrainian);
 
         var settings = Substitute.For<IFocusSettingsProvider>();
         settings.Current.Returns(new FocusSettings());
@@ -48,7 +49,7 @@ public sealed class FileDialogsAndLauncherTests : IDisposable
 
     private DashboardViewModel CreateDashboardWithOpenTask()
     {
-        _store.Rows.Add(new TaskRow(_clock) { Id = TaskId, Title = "Задача", DueDate = _clock.Today.AddHours(18) });
+        _store.Rows.Add(new TaskRow(_clock, _store.Localizer) { Id = TaskId, Title = "Задача", DueDate = _clock.Today.AddHours(18) });
 
         var catalog = Substitute.For<ICatalogService>();
         catalog.GetTagsAsync().Returns(new List<TagDto>());
@@ -67,7 +68,7 @@ public sealed class FileDialogsAndLauncherTests : IDisposable
     }
 
     private SettingsViewModel CreateSettings()
-        => new(_timer, Substitute.For<IAuthService>(), _picker, _launcher);
+        => new(_timer, Substitute.For<IAuthService>(), _picker, _launcher, _store.Localizer);
 
     // ───── вкладення на головній ─────
 

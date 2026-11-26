@@ -15,14 +15,17 @@ public class AccentOption : BoardBase
     private bool _isSelected;
     private readonly string _name;
 
-    public AccentOption(string name, string hex)
+    private readonly ILocalizer _localizer;
+
+    public AccentOption(string name, string hex, ILocalizer localizer)
     {
         _name = name;
+        _localizer = localizer;
         Color = (Color)ColorConverter.ConvertFromString(hex);
         Brush = new SolidColorBrush(Color);
     }
 
-    public string Name => UiPreferences.Instance.Translate(_name);
+    public string Name => _localizer.Translate(_name);
     public Color Color { get; }
     public SolidColorBrush Brush { get; }
     public bool IsSelected { get => _isSelected; set => SetField(ref _isSelected, value); }
@@ -50,7 +53,13 @@ public class SettingsViewModel : PageViewModelBase
 
     public const string SupportUrl = "https://focuslab.app/support";
 
-    public SettingsViewModel(TimerViewModel timer, IAuthService auth, IFilePickerService filePicker, IProcessLauncher launcher)
+    public SettingsViewModel(
+        TimerViewModel timer,
+        IAuthService auth,
+        IFilePickerService filePicker,
+        IProcessLauncher launcher,
+        ILocalizer localizer)
+        : base(localizer)
     {
         _timer = timer;
         _auth = auth;
@@ -58,11 +67,11 @@ public class SettingsViewModel : PageViewModelBase
         _launcher = launcher ?? throw new ArgumentNullException(nameof(launcher));
         Accents = new ObservableCollection<AccentOption>
         {
-            new("Синій", "#3B6EF5") { IsSelected = true },
-            new("Фіолетовий", "#A855F7"),
-            new("Зелений", "#34B27B"),
-            new("Помаранчевий", "#F0A63A"),
-            new("Червоний", "#E5534B")
+            new("Синій", "#3B6EF5", Localizer) { IsSelected = true },
+            new("Фіолетовий", "#A855F7", Localizer),
+            new("Зелений", "#34B27B", Localizer),
+            new("Помаранчевий", "#F0A63A", Localizer),
+            new("Червоний", "#E5534B", Localizer)
         };
 
         SelectAccentCommand = new RelayCommand(p => { if (p is AccentOption o) SelectAccent(o); });
@@ -74,8 +83,8 @@ public class SettingsViewModel : PageViewModelBase
         {
             IsDeleteOpen = false;
             MessageBox.Show(
-                UiPreferences.Instance.Translate("Видалення акаунта недоступне: цей застосунок зараз використовує локальний демонстраційний профіль."),
-                UiPreferences.Instance.Translate("Видалення акаунта"),
+                Localizer.Translate("Видалення акаунта недоступне: цей застосунок зараз використовує локальний демонстраційний профіль."),
+                Localizer.Translate("Видалення акаунта"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         });
@@ -105,14 +114,14 @@ public class SettingsViewModel : PageViewModelBase
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, UiPreferences.Instance.Translate("Не вдалося відкрити підтримку"), MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, Localizer.Translate("Не вдалося відкрити підтримку"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         });
     }
 
     public ObservableCollection<AccentOption> Accents { get; }
     public string[] Languages => new[] { "Українська", "English" }
-        .Select(UiPreferences.Instance.Translate).ToArray();
+        .Select(Localizer.Translate).ToArray();
 
     public string UserName
     {
@@ -156,7 +165,7 @@ public class SettingsViewModel : PageViewModelBase
         }
         catch (Exception ex)
         {
-            EditError = UiPreferences.Instance.Translate("Помилка збереження") + ": " + ex.Message;
+            EditError = Localizer.Translate("Помилка збереження") + ": " + ex.Message;
         }
         finally
         {
@@ -215,12 +224,12 @@ public class SettingsViewModel : PageViewModelBase
 
     public string SelectedLanguage
     {
-        get => UiPreferences.Instance.Translate(UiPreferences.Instance.Language);
+        get => Localizer.Translate(Localizer.Language);
         set
         {
-            var source = UiPreferences.Instance.SourceText(value ?? string.Empty);
-            if (source is "Українська" or "English" && source != UiPreferences.Instance.Language)
-                UiPreferences.Instance.SetLanguage(source);
+            var source = Localizer.SourceText(value ?? string.Empty);
+            if (source is "Українська" or "English" && source != Localizer.Language)
+                UiPreferences.Instance.SetLanguage(source); // зміна мови — глобальне налаштування застосунку
         }
     }
 
@@ -237,7 +246,7 @@ public class SettingsViewModel : PageViewModelBase
             accent.RefreshLanguage();
     }
 
-    public string VersionText => UiPreferences.Instance.Translate("Версія v0.0.1");
+    public string VersionText => Localizer.Translate("Версія v0.0.1");
 
     // ----- модалки -----
     public bool IsEditOpen { get => _isEditOpen; set => SetField(ref _isEditOpen, value); }
@@ -246,7 +255,7 @@ public class SettingsViewModel : PageViewModelBase
     public string EditEmail { get => _editEmail; set { if (SetField(ref _editEmail, value)) OnPropertyChanged(nameof(CanSaveProfile)); } }
     public string EditError
     {
-        get => UiPreferences.Instance.Translate(_editError);
+        get => Localizer.Translate(_editError);
         private set => SetField(ref _editError, value);
     }
     public bool CanSaveProfile => !_isSavingProfile && EditName.Trim().Length > 0 && EditEmail.Contains('@');

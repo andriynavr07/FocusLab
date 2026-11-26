@@ -10,7 +10,6 @@ using TaskStatus = FocusLab.Domain.Enums.TaskStatus;
 
 namespace FocusLab.Frontend.Tests;
 
-[Collection(UiPreferencesCollection.Name)]
 public class TaskBoardStoreTests
 {
     private readonly ITaskService _service = Substitute.For<ITaskService>();
@@ -18,11 +17,11 @@ public class TaskBoardStoreTests
     private readonly TaskAttachmentStore _attachments = new();
     private readonly FakeClock _clock = new(new DateTime(2026, 11, 19, 14, 30, 0));
 
-    private TaskBoardStore CreateStore() => new(_service, _dialogs, _clock, _attachments);
+    private TaskBoardStore CreateStore() => new(_service, _dialogs, _clock, _attachments, TestLocalizers.Ukrainian);
 
     private TaskRow AddSavedRow(TaskBoardStore store, int id)
     {
-        var row = new TaskRow(_clock) { Id = id, Title = "Task " + id };
+        var row = new TaskRow(_clock, TestLocalizers.Ukrainian) { Id = id, Title = "Task " + id };
         store.Rows.Add(row);
         return row;
     }
@@ -138,7 +137,7 @@ public class TaskBoardStoreTests
     {
         _service.CreateAsync(Arg.Any<TaskDto>(), Arg.Any<CancellationToken>()).Returns(Dto(42, "New"));
         var store = CreateStore();
-        var row = new TaskRow(_clock) { Title = "New" };
+        var row = new TaskRow(_clock, TestLocalizers.Ukrainian) { Title = "New" };
 
         store.Add(row);
         await WaitUntilAsync(() => row.Id == 42);
@@ -153,7 +152,7 @@ public class TaskBoardStoreTests
         // Регресія #86: CreateAsync завжди ставить Todo, тому інший статус треба дописати окремим Update.
         _service.CreateAsync(Arg.Any<TaskDto>(), Arg.Any<CancellationToken>()).Returns(Dto(7, "Started"));
         var store = CreateStore();
-        var row = new TaskRow(_clock) { Title = "Started", Status = "InProgress" };
+        var row = new TaskRow(_clock, TestLocalizers.Ukrainian) { Title = "Started", Status = "InProgress" };
 
         store.Add(row);
         await WaitUntilAsync(() => CalledUpdate(_service.ReceivedCalls()));
@@ -182,7 +181,7 @@ public class TaskBoardStoreTests
         var create = new TaskCompletionSource<TaskDto>();
         _service.CreateAsync(Arg.Any<TaskDto>(), Arg.Any<CancellationToken>()).Returns(create.Task);
         var store = CreateStore();
-        var row = new TaskRow(_clock) { Title = "Draft" };
+        var row = new TaskRow(_clock, TestLocalizers.Ukrainian) { Title = "Draft" };
 
         store.Add(row);
         row.Title = "Edited";
@@ -229,7 +228,7 @@ public class TaskBoardStoreTests
         await store.LoadAsync();
         store.Rows.Single().PriorityKey.Should().Be(key);
 
-        store.Add(new TaskRow(_clock) { Title = "Back", PriorityKey = key });
+        store.Add(new TaskRow(_clock, TestLocalizers.Ukrainian) { Title = "Back", PriorityKey = key });
         await WaitUntilAsync(() => _service.ReceivedCalls().Any(c => c.GetMethodInfo().Name == nameof(ITaskService.CreateAsync)));
 
         await _service.Received(1).CreateAsync(Arg.Is<TaskDto>(d => d.Priority == priority), Arg.Any<CancellationToken>());

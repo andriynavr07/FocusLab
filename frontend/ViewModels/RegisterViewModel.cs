@@ -23,7 +23,7 @@ public class RegisterViewModel : PageViewModelBase
     public string ConfirmPassword { get => _confirmPassword; set { _confirmPassword = value; OnPropertyChanged(); } }
     public string ErrorMessage
     {
-        get => UiPreferences.Instance.Translate(_errorMessage);
+        get => Localizer.Translate(_errorMessage);
         private set { _errorMessage = value; OnPropertyChanged(); }
     }
 
@@ -32,7 +32,8 @@ public class RegisterViewModel : PageViewModelBase
     public ICommand RegisterCommand { get; }
     public ICommand NavigateToLoginCommand { get; }
 
-    public RegisterViewModel(IAuthService auth)
+    public RegisterViewModel(IAuthService auth, ILocalizer localizer)
+        : base(localizer)
     {
         _auth = auth;
         RegisterCommand = new RelayCommand(
@@ -66,7 +67,7 @@ public class RegisterViewModel : PageViewModelBase
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"{UiPreferences.Instance.Translate("Помилка реєстрації")}: {ex.Message}";
+            ErrorMessage = $"{Localizer.Translate("Помилка реєстрації")}: {ex.Message}";
         }
         finally
         {

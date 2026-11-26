@@ -1,3 +1,4 @@
+using Frontend.Services;
 using System.Windows;
 using System.Windows.Input;
 using FocusLab.Application.Abstractions;
@@ -40,7 +41,7 @@ public class LoginViewModel : PageViewModelBase
 
     public string ErrorMessage
     {
-        get => Frontend.Services.UiPreferences.Instance.Translate(_errorMessage);
+        get => Localizer.Translate(_errorMessage);
         private set { _errorMessage = value; OnPropertyChanged(); }
     }
 
@@ -56,7 +57,8 @@ public class LoginViewModel : PageViewModelBase
     public ICommand NavigateToRegisterCommand { get; }
     public ICommand ForgotPasswordCommand { get; }
 
-    public LoginViewModel(IAuthService auth, Action onLoginSuccess)
+    public LoginViewModel(IAuthService auth, Action onLoginSuccess, ILocalizer localizer)
+        : base(localizer)
     {
         _auth = auth;
         _onLoginSuccess = onLoginSuccess ?? throw new ArgumentNullException(nameof(onLoginSuccess));
@@ -68,8 +70,8 @@ public class LoginViewModel : PageViewModelBase
         NavigateToRegisterCommand = new RelayCommand(_ => RegisterRequested?.Invoke());
         ForgotPasswordCommand = new RelayCommand(_ =>
             MessageBox.Show(
-                Frontend.Services.UiPreferences.Instance.Translate("Відновлення пароля недоступне для локального акаунта."),
-                Frontend.Services.UiPreferences.Instance.Translate("Відновлення пароля"),
+                Localizer.Translate("Відновлення пароля недоступне для локального акаунта."),
+                Localizer.Translate("Відновлення пароля"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information));
     }
@@ -90,7 +92,7 @@ public class LoginViewModel : PageViewModelBase
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"{Frontend.Services.UiPreferences.Instance.Translate("Помилка входу")}: {ex.Message}";
+            ErrorMessage = $"{Localizer.Translate("Помилка входу")}: {ex.Message}";
         }
         finally
         {

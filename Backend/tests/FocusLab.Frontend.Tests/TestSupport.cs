@@ -1,6 +1,4 @@
 using Frontend.Services;
-using Xunit;
-using Frontend.Services;
 
 namespace FocusLab.Frontend.Tests;
 
@@ -12,11 +10,11 @@ public sealed class FakeClock(DateTime now) : IAppClock
 }
 
 /// <summary>
-/// UiPreferences.Instance — спільний синглтон із глобальним станом (мова, тема).
-/// Тести, які його зачіпають, мають бути в цій колекції: xUnit виконує їх послідовно.
+/// Локалізатори з фіксованою мовою. Кожен тест отримує свій екземпляр через конструктори
+/// ViewModel-ів, тож тести на тексти не залежать від UiPreferences.Instance і можуть йти паралельно.
 /// </summary>
-[CollectionDefinition(Name, DisableParallelization = true)]
-public sealed class UiPreferencesCollection
+public static class TestLocalizers
 {
-    public const string Name = "UiPreferences";
+    public static ILocalizer Ukrainian => new FixedLocalizer(FixedLocalizer.Ukrainian);
+    public static ILocalizer English => new FixedLocalizer(FixedLocalizer.English);
 }

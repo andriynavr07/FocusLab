@@ -8,7 +8,6 @@ using Xunit;
 
 namespace FocusLab.Frontend.Tests;
 
-[Collection(UiPreferencesCollection.Name)]
 public class TasksViewModelTests
 {
     private readonly ITaskService _service = Substitute.For<ITaskService>();
@@ -20,13 +19,13 @@ public class TasksViewModelTests
     {
         var catalog = Substitute.For<ICatalogService>();
         catalog.GetTagsAsync().Returns(new List<TagDto>());
-        _store = new TaskBoardStore(_service, Substitute.For<IDialogService>(), _clock, new TaskAttachmentStore());
+        _store = new TaskBoardStore(_service, Substitute.For<IDialogService>(), _clock, new TaskAttachmentStore(), TestLocalizers.Ukrainian);
         _viewModel = new TasksViewModel(_store, catalog);
     }
 
     private TaskRow AddRow(string title, string status = "Todo", int id = 0)
     {
-        var row = new TaskRow(_clock) { Id = id, Title = title, Status = status, DueDate = _clock.Today.AddHours(18) };
+        var row = new TaskRow(_clock, TestLocalizers.Ukrainian) { Id = id, Title = title, Status = status, DueDate = _clock.Today.AddHours(18) };
         _store.Rows.Add(row);
         return row;
     }
@@ -119,12 +118,12 @@ public class TasksViewModelTests
     public void FormTitle_InEditMode_IsEdit()
     {
         var row = AddRow("Task", id: 3);
-        _viewModel.FormTitle.Should().Be(UiPreferences.Instance.Translate("Нове завдання"));
+        _viewModel.FormTitle.Should().Be("Нове завдання");
 
         _viewModel.OpenEditTask(row);
 
         _viewModel.IsEditing.Should().BeTrue();
-        _viewModel.FormTitle.Should().Be(UiPreferences.Instance.Translate("Редагувати завдання"));
+        _viewModel.FormTitle.Should().Be("Редагувати завдання");
     }
 
     [Fact]

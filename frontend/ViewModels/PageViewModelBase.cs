@@ -14,16 +14,27 @@ public abstract class PageViewModelBase : BoardBase
     public event Action? NewTaskRequested;
     protected void RequestNewTask() => NewTaskRequested?.Invoke();
 
-    protected PageViewModelBase()
+    protected PageViewModelBase(ILocalizer localizer)
     {
+        Localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
+        Uk = new Uk(localizer);
+
         // Ім'я, пошта та серійний період змінюються з різних місць — оновлюємо верхню панель.
         WeakEventManager<UserSession, EventArgs>.AddHandler(UserSession.Instance, nameof(UserSession.Changed), OnSessionChanged);
-        PropertyChangedEventManager.AddHandler(UiPreferences.Instance, OnPreferencesChanged, string.Empty);
+        // Тема поки що глобальна (UiPreferences), мова — через ILocalizer.
+        PropertyChangedEventManager.AddHandler(UiPreferences.Instance, OnThemePreferencesChanged, string.Empty);
+        PropertyChangedEventManager.AddHandler(localizer, OnLocalizerChanged, string.Empty);
         ToggleThemeCommand = new RelayCommand(_ => UiPreferences.Instance.ToggleTheme());
         ToggleLanguageCommand = new RelayCommand(_ => UiPreferences.Instance.ToggleLanguage());
         OpenNotificationsCommand = new RelayCommand(_ => IsNotificationsOpen = true);
         OpenNewTaskCommand = new RelayCommand(_ => RequestNewTask());
     }
+
+    /// <summary>Переклад і мова інтерфейсу для цієї сторінки.</summary>
+    public ILocalizer Localizer { get; }
+
+    /// <summary>Форматування дат, тривалостей і множини мовою <see cref="Localizer"/>.</summary>
+    protected Uk Uk { get; }
 
     protected static bool IsLightTheme => UiPreferences.Instance.IsLightTheme;
 
@@ -37,7 +48,7 @@ public abstract class PageViewModelBase : BoardBase
     protected virtual void OnSearchChanged() { }
 
     public string ThemeButtonText => UiPreferences.Instance.ThemeButtonText;
-    public string LanguageButtonText => UiPreferences.Instance.LanguageButtonText;
+    public string LanguageButtonText => Localizer.IsEnglish ? "UA" : "EN";
     public string StreakText => UserSession.Instance.StreakText;
     public string AvatarInitials => UserSession.Instance.Initials;
 
@@ -48,15 +59,18 @@ public abstract class PageViewModelBase : BoardBase
         OnUserSessionChanged();
     }
 
-    private void OnPreferencesChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnThemePreferencesChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(UiPreferences.ThemeButtonText) or nameof(UiPreferences.IsLightTheme))
         {
             OnPropertyChanged(nameof(ThemeButtonText));
             OnThemeChanged();
         }
+    }
 
-        if (e.PropertyName is nameof(UiPreferences.LanguageButtonText) or nameof(UiPreferences.Language))
+    private void OnLocalizerChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(ILocalizer.Language))
         {
             OnPropertyChanged(nameof(LanguageButtonText));
             OnLanguageChanged();

@@ -8,7 +8,7 @@ using System.Windows.Markup;
 
 namespace Frontend.Services;
 
-public sealed class UiPreferences : INotifyPropertyChanged
+public sealed class UiPreferences : ILocalizer
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private static readonly IReadOnlyDictionary<string, string> EnglishTexts =
@@ -295,6 +295,7 @@ public sealed class UiPreferences : INotifyPropertyChanged
             CultureInfo.DefaultThreadCurrentCulture = culture;
             CultureInfo.DefaultThreadCurrentUICulture = culture;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(IsEnglish));
             OnPropertyChanged(nameof(LanguageButtonText));
         }
     }
@@ -302,10 +303,17 @@ public sealed class UiPreferences : INotifyPropertyChanged
     public string ThemeButtonText => IsLightTheme ? "Dark" : "Light";
     public string LanguageButtonText => Language == "Українська" ? "EN" : "UA";
 
-    public string Translate(string text)
-        => Language == "English" && EnglishTexts.TryGetValue(text, out var translation) ? translation : text;
+    public bool IsEnglish => Language == "English";
 
-    public string SourceText(string text)
+    public string Translate(string text) => TranslateTo(Language, text);
+
+    public string SourceText(string text) => SourceTextOf(text);
+
+    /// <summary>Переклад на вказану мову — чиста функція без глобального стану (див. <see cref="FixedLocalizer"/>).</summary>
+    public static string TranslateTo(string language, string text)
+        => language == "English" && EnglishTexts.TryGetValue(text, out var translation) ? translation : text;
+
+    public static string SourceTextOf(string text)
         => EnglishTexts.FirstOrDefault(pair => pair.Value == text).Key ?? text;
 
     public void Initialize(string settingsDirectory)

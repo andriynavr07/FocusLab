@@ -55,7 +55,7 @@ public class WorkspaceViewModel : ViewModelBase
             filePicker, launcher);
         _tasks = new TasksViewModel(_taskStore, _catalog);
         _calendar = new CalendarViewModel(_taskStore);
-        _settings = new SettingsViewModel(_timer, auth ?? throw new ArgumentNullException(nameof(auth)), filePicker, launcher);
+        _settings = new SettingsViewModel(_timer, auth ?? throw new ArgumentNullException(nameof(auth)), filePicker, launcher, _taskStore.Localizer);
         _currentPage = _dashboard;
         _taskStore.Changed += OnTasksChanged;
         _dashboard.EditTaskRequested += OpenEditTask;
