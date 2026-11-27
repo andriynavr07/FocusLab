@@ -3,7 +3,6 @@ using FluentAssertions;
 
 namespace FocusLab.Infrastructure.Tests;
 
-/// <summary>#54 / #55: залежності між шарами йдуть лише в один бік.</summary>
 public class ArchitectureTests
 {
     private static readonly Assembly DomainAssembly = typeof(FocusLab.Domain.Entities.TaskItem).Assembly;

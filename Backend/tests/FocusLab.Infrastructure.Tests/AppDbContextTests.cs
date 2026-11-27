@@ -32,7 +32,6 @@ public class AppDbContextTests
 
         await using (var db = database.CreateContext())
         {
-            // Так само, як у TaskRepository.DeleteAsync: видалення робить БД, каскад теж на боці БД.
             await db.Tasks.ExecuteDeleteAsync();
         }
 
@@ -40,7 +39,6 @@ public class AppDbContextTests
         {
             (await db.TaskTags.CountAsync()).Should().Be(0);
             (await db.FocusSessions.CountAsync()).Should().Be(0);
-            // сам тег не видаляється
             (await db.Tags.CountAsync(tag => tag.Name == "Urgent")).Should().Be(1);
         }
     }

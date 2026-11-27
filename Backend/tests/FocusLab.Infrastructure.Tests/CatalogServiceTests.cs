@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FocusLab.Infrastructure.Tests;
 
-/// <summary>#73: проєкти й теги.</summary>
 public class CatalogServiceTests
 {
     private const string Blue = "#3B6EF5";
@@ -128,7 +127,6 @@ public class CatalogServiceTests
 
         await using var db = database.CreateContext();
         (await db.TaskTags.CountAsync()).Should().Be(0);
-        // сама задача лишається
         (await db.Tasks.CountAsync(t => t.Id == task.Id)).Should().Be(1);
     }
 }

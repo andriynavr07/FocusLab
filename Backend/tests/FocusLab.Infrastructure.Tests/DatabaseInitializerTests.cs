@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FocusLab.Infrastructure.Tests;
 
-/// <summary>#58: створення БД і застосування міграцій при старті.</summary>
 public class DatabaseInitializerTests
 {
     [Fact]
@@ -34,7 +33,6 @@ public class DatabaseInitializerTests
     [Fact]
     public async Task InitializeAsync_FileDb_SetsWalJournalMode()
     {
-        // WAL не діє для :memory:, тому для цього тесту потрібен справжній файл.
         var path = Path.Combine(Path.GetTempPath(), $"focuslab-tests-{Guid.NewGuid():N}.db");
         var connectionString = $"Data Source={path};Foreign Keys=True";
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connectionString).Options;

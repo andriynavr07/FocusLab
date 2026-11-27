@@ -5,7 +5,6 @@ using FocusLab.Infrastructure.SystemServices;
 
 namespace FocusLab.Infrastructure.Tests;
 
-/// <summary>#73: settings.json, секція "focus".</summary>
 public sealed class JsonFocusSettingsProviderTests : IDisposable
 {
     private readonly string _directory =

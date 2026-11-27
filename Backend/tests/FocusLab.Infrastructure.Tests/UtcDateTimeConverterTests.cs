@@ -3,7 +3,6 @@ using FocusLab.Infrastructure.Persistence;
 
 namespace FocusLab.Infrastructure.Tests;
 
-/// <summary>#57: дати в БД зберігаються в UTC.</summary>
 public class UtcDateTimeConverterTests
 {
     [Fact]
@@ -22,7 +21,6 @@ public class UtcDateTimeConverterTests
     public void ReadValue_HasUtcKind()
     {
         var converter = new UtcDateTimeConverter();
-        // SQLite повертає DateTime з Kind = Unspecified
         var raw = new DateTime(2026, 11, 20, 10, 0, 0, DateTimeKind.Unspecified);
 
         var read = (DateTime)converter.ConvertFromProvider(raw)!;

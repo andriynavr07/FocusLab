@@ -4,10 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FocusLab.Infrastructure.Tests;
 
-/// <summary>
-/// SQLite in-memory: одне відкрите з'єднання на весь тест (БД живе, поки воно відкрите).
-/// Foreign keys увімкнені, як у застосунку, тож каскадні видалення працюють по-справжньому.
-/// </summary>
 public sealed class TestDatabase : IDisposable
 {
     private readonly SqliteConnection _connection;
@@ -27,7 +23,6 @@ public sealed class TestDatabase : IDisposable
 
     public AppDbContext CreateContext() => new(Options);
 
-    /// <summary>Накочує всі міграції — схема така сама, як у застосунку.</summary>
     public async Task MigrateAsync()
     {
         await using var db = CreateContext();

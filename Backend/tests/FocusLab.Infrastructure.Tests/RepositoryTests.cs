@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FocusLab.Infrastructure.Tests;
 
-/// <summary>#73: TaskRepository та обмеження БД.</summary>
 public class RepositoryTests
 {
     private static async Task<int> AddTagAsync(TestDatabase database, string name)
